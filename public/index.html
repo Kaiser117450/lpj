@@ -3,341 +3,741 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#0c0e14">
+<meta name="theme-color" content="#0f0f0f">
 <meta name="description" content="AGE BALI - LPJ Report Builder untuk Ayam Guling Enakko. Buat laporan bukti nota & transfer dalam format DOCX, XLSX, dan PDF.">
 <title>AGE BALI — LPJ Report Builder</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23e8a012'/%3E%3Ctext x='50' y='66' font-size='52' font-weight='800' text-anchor='middle' fill='%23000' font-family='system-ui'%3EL%3C/text%3E%3C/svg%3E">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='16' fill='%230007cd'/%3E%3Ctext x='50' y='68' font-size='56' font-weight='600' text-anchor='middle' fill='%23fff' font-family='system-ui'%3EL%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  /* ─── Composio Design System Tokens ───────────────────────────── */
   :root {
-    --bg: #0c0e14; --card: #14161f; --surface: #1a1d28;
-    --border: #262a38; --text: #e4e6ec; --muted: #7a7f95;
-    --accent: #e8a012; --accent-dim: #b47d0e; --blue: #3b82f6;
-    --danger: #ef4444; --green: #22c55e; --red-bg: #dc2626;
-    --radius: 10px;
+    /* Brand */
+    --primary: #0007cd;
+    --primary-active: #0005a3;
+    --primary-glow: #1a26ff;
+    --accent-cyan: #00d4ff;
+
+    /* Canvas & surfaces */
+    --canvas: #0f0f0f;
+    --canvas-deep: #000000;
+    --surface-card: #181818;
+    --surface-card-elevated: #222222;
+    --surface-strong: #2a2a2a;
+
+    /* Hairlines */
+    --hairline: #222222;
+    --hairline-soft: #1a1a1a;
+    --hairline-strong: #333333;
+
+    /* Text */
+    --ink: #ffffff;
+    --body: #a8a8a8;
+    --body-strong: #ffffff;
+    --muted: #888888;
+    --muted-soft: #666666;
+    --on-primary: #ffffff;
+
+    /* Semantic */
+    --success: #33d17a;
+    --error: #ff4d4d;
+
+    /* Geometry */
+    --r-xs: 4px;
+    --r-sm: 6px;
+    --r-md: 8px;
+    --r-lg: 12px;
+    --r-xl: 16px;
+    --r-pill: 9999px;
+
+    /* Spacing */
+    --s-xxs: 4px;
+    --s-xs: 8px;
+    --s-sm: 12px;
+    --s-base: 16px;
+    --s-md: 20px;
+    --s-lg: 24px;
+    --s-xl: 32px;
+    --s-xxl: 48px;
+    --s-section: 96px;
+
+    /* Type */
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
   }
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: var(--canvas); }
   body {
-    font-family: 'DM Sans', system-ui, sans-serif;
-    background: var(--bg); color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--body-strong);
     min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
   button { font-family: inherit; cursor: pointer; }
-  input, select { font-family: inherit; }
+  input, select, textarea { font-family: inherit; }
+  ::selection { background: var(--primary); color: var(--on-primary); }
 
-  /* ── Header ─────────────────────────────── */
-  .header {
-    background: linear-gradient(135deg, #14161f 0%, #1a1510 100%);
-    border-bottom: 1px solid var(--border);
-    padding: 22px 20px 18px;
+  /* Reusable typography classes */
+  .t-display-md { font-size: 32px; font-weight: 500; line-height: 1.15; letter-spacing: -0.96px; }
+  .t-display-sm { font-size: 24px; font-weight: 500; line-height: 1.25; letter-spacing: -0.5px; }
+  .t-title-md   { font-size: 18px; font-weight: 600; line-height: 1.4; }
+  .t-title-sm   { font-size: 16px; font-weight: 600; line-height: 1.4; }
+  .t-body-md    { font-size: 16px; font-weight: 400; line-height: 1.5; }
+  .t-body-sm    { font-size: 14px; font-weight: 400; line-height: 1.5; }
+  .t-caption    { font-size: 13px; font-weight: 400; line-height: 1.4; color: var(--body); }
+  .t-caption-up { font-size: 11px; font-weight: 600; line-height: 1.4; letter-spacing: 0.88px; text-transform: uppercase; }
+  .t-code       { font-family: var(--font-mono); font-size: 13px; font-weight: 400; line-height: 1.5; }
+
+  /* ─── Top Nav (top-nav-dark) ──────────────────────────────────── */
+  .top-nav {
     position: sticky; top: 0; z-index: 100;
-    backdrop-filter: blur(10px);
+    background: rgba(15, 15, 15, 0.85);
+    backdrop-filter: blur(12px) saturate(140%);
+    border-bottom: 1px solid var(--hairline);
+    height: 64px;
   }
-  .header-inner { max-width: 880px; margin: 0 auto; }
-  .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
-  .brand-badge {
-    background: var(--accent); color: #000; font-weight: 800;
-    font-size: 12px; padding: 4px 10px; border-radius: 5px;
-    letter-spacing: 1.2px;
+  .top-nav-inner {
+    max-width: 1200px; margin: 0 auto; height: 100%;
+    padding: 0 var(--s-lg);
+    display: flex; align-items: center; gap: var(--s-md);
   }
-  .brand-title { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
-  .brand-sub { font-size: 12px; color: var(--muted); }
-  .brand-save-state {
-    margin-left: auto; font-size: 11px; color: var(--muted);
-    display: flex; align-items: center; gap: 6px;
+  .wordmark {
+    display: flex; align-items: center; gap: var(--s-sm);
+    font-size: 16px; font-weight: 600; color: var(--ink);
+    letter-spacing: -0.2px;
   }
-  .brand-save-state .dot {
+  .wordmark .glyph {
+    width: 28px; height: 28px; border-radius: var(--r-md);
+    background: var(--primary);
+    display: grid; place-items: center;
+    color: var(--on-primary); font-weight: 600; font-size: 14px;
+    box-shadow: 0 0 24px -4px var(--primary-glow);
+  }
+  .wordmark .label-thin { color: var(--muted); font-weight: 400; margin-left: 4px; }
+  .nav-spacer { flex: 1; }
+  .save-state {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--muted);
+    padding: 6px 12px;
+    background: var(--surface-card);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-pill);
+  }
+  .save-state .dot {
     width: 6px; height: 6px; border-radius: 50%;
-    background: var(--green); display: inline-block;
+    background: var(--success);
   }
-  .brand-save-state .dot.saving { background: var(--accent); animation: pulse 1s infinite; }
+  .save-state .dot.saving { background: var(--primary-glow); animation: pulse 1s infinite; }
   @keyframes pulse { 50% { opacity: 0.3; } }
 
-  .header-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
-  .header-controls .field { flex: 1; min-width: 200px; }
-  .header-controls .field label {
-    display: block; font-size: 11px; font-weight: 600; color: var(--accent);
-    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px;
+  /* ─── Hero band ──────────────────────────────────────────────── */
+  .hero {
+    position: relative;
+    padding: var(--s-xxl) var(--s-lg) var(--s-xl);
+    overflow: hidden;
   }
-  .header-controls .field input {
-    width: 100%; padding: 8px 10px; font-size: 15px; font-weight: 600;
-    border: 1px solid var(--border); border-radius: 7px;
-    background: rgba(255,255,255,0.04); color: var(--text); outline: none;
-    transition: border-color 0.15s;
+  .hero::before {
+    content: ""; position: absolute; inset: -40px 0 0 0;
+    background: radial-gradient(60% 50% at 50% 0%, rgba(26, 38, 255, 0.18), transparent 70%);
+    pointer-events: none; z-index: 0;
   }
-  .header-controls .field input:focus { border-color: var(--accent); }
-  .export-btns { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
+  .hero-inner { max-width: 1200px; margin: 0 auto; position: relative; z-index: 1; }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    margin-bottom: var(--s-base);
+    padding: 4px 10px;
+    background: var(--surface-card-elevated);
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--r-pill);
+    color: var(--body-strong);
+  }
+  .hero-eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary-glow); box-shadow: 0 0 8px var(--primary-glow); }
+  .hero-title {
+    font-size: 44px; font-weight: 500; line-height: 1.1; letter-spacing: -1.32px;
+    color: var(--ink);
+    margin-bottom: var(--s-sm);
+  }
+  .hero-title em {
+    font-style: normal;
+    background: linear-gradient(135deg, var(--primary-glow) 0%, var(--accent-cyan) 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero-sub {
+    font-size: 16px; color: var(--body); max-width: 620px;
+    margin-bottom: var(--s-xl);
+  }
 
-  /* ── Buttons ────────────────────────────── */
+  /* Hero control row */
+  .hero-controls {
+    display: flex; gap: var(--s-sm); align-items: flex-end; flex-wrap: wrap;
+    background: var(--surface-card);
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--r-xl);
+    padding: var(--s-md);
+  }
+  .hero-controls .field { flex: 1; min-width: 220px; }
+  .hero-controls .field label {
+    display: block; margin-bottom: 8px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.88px;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .text-input {
+    width: 100%;
+    background: var(--canvas);
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--r-md);
+    padding: 12px 16px;
+    height: 44px;
+    font-size: 15px; font-weight: 500;
+    color: var(--body-strong);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .text-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 7, 205, 0.25);
+  }
+  .text-input::placeholder { color: var(--muted-soft); }
+  .export-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* ─── Buttons ────────────────────────────────────────────────── */
   .btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 8px 16px; border-radius: 8px; border: none;
-    color: #fff; font-weight: 600; font-size: 13px;
-    transition: opacity 0.15s, transform 0.1s;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    height: 40px;
+    padding: 0 18px;
+    border: 1px solid transparent;
+    border-radius: var(--r-md);
+    font-size: 14px; font-weight: 500; line-height: 1;
+    background: var(--surface-card-elevated);
+    color: var(--body-strong);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.08s, opacity 0.15s;
+    white-space: nowrap;
   }
-  .btn:hover:not([disabled]) { opacity: 0.88; }
-  .btn:active:not([disabled]) { transform: scale(0.97); }
-  .btn-accent { background: var(--accent); color: #000; }
-  .btn-green { background: var(--green); }
-  .btn-red { background: var(--red-bg); }
-  .btn-blue { background: var(--blue); }
+  .btn:hover:not([disabled]) { background: var(--surface-strong); }
+  .btn:active:not([disabled]) { transform: scale(0.98); }
+  .btn[disabled] { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+
+  .btn-primary {
+    background: var(--primary);
+    color: var(--on-primary);
+    box-shadow: 0 0 0 0 transparent;
+  }
+  .btn-primary:hover:not([disabled]) {
+    background: var(--primary);
+    box-shadow: 0 8px 32px -8px rgba(0, 7, 205, 0.6);
+  }
+  .btn-primary:active:not([disabled]) { background: var(--primary-active); }
+
+  .btn-outline {
+    background: transparent;
+    border-color: var(--hairline-strong);
+    color: var(--body-strong);
+  }
+  .btn-outline:hover:not([disabled]) {
+    border-color: var(--muted);
+    background: var(--surface-card);
+  }
+
   .btn-ghost {
-    background: transparent; border: 1px solid var(--border);
-    color: var(--muted); font-size: 12px; padding: 5px 10px;
+    background: transparent;
+    color: var(--body);
+    height: 32px;
+    padding: 0 12px;
+    font-size: 13px;
   }
-  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
-  .btn-full { width: 100%; justify-content: center; padding: 12px 20px; font-size: 14px; font-weight: 700; }
-  .btn[disabled] { opacity: 0.35; pointer-events: none; cursor: not-allowed; }
+  .btn-ghost:hover:not([disabled]) { color: var(--body-strong); background: var(--surface-card); }
+
+  .btn-danger {
+    background: transparent;
+    color: var(--error);
+    border-color: rgba(255, 77, 77, 0.3);
+  }
+  .btn-danger:hover:not([disabled]) {
+    background: rgba(255, 77, 77, 0.08);
+    border-color: rgba(255, 77, 77, 0.5);
+  }
+
+  .btn-full { width: 100%; height: 48px; }
   .btn .spinner {
     width: 14px; height: 14px;
     border: 2px solid currentColor; border-top-color: transparent;
-    border-radius: 50%; animation: spin 0.6s linear infinite;
+    border-radius: 50%; animation: spin 0.7s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ── Content ────────────────────────────── */
-  .content { max-width: 880px; margin: 0 auto; padding: 20px 20px 100px; }
-  .entries { display: flex; flex-direction: column; gap: 12px; }
-
-  /* ── Entry Card ─────────────────────────── */
-  .entry-card {
-    background: var(--card); border-radius: 12px;
-    border: 1px solid var(--border); overflow: hidden;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  /* ─── Content shell ──────────────────────────────────────────── */
+  .content {
+    max-width: 1200px; margin: 0 auto;
+    padding: var(--s-xl) var(--s-lg) calc(var(--s-section) + 40px);
   }
-  .entry-header {
+  .section-label {
     display: flex; align-items: center; gap: 10px;
-    padding: 11px 16px; cursor: pointer;
-    transition: background 0.15s;
+    margin-bottom: var(--s-base);
+    color: var(--muted);
   }
-  .entry-header:hover { background: var(--surface); }
-  .entry-header.open { background: var(--surface); border-bottom: 1px solid var(--border); }
-  .entry-chevron {
-    width: 16px; height: 16px; transition: transform 0.2s;
-    color: var(--muted); flex-shrink: 0;
+  .section-label::after {
+    content: ""; flex: 1; height: 1px; background: var(--hairline);
   }
-  .entry-chevron.open { transform: rotate(90deg); }
-  .entry-title { flex: 1; font-weight: 600; font-size: 14px; }
-  .entry-code { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
-  .entry-badge {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 2px 6px; border-radius: 4px;
-    font-size: 10px; font-weight: 600;
-    background: rgba(255,255,255,0.05); color: var(--muted);
-  }
-  .entry-badge.has-data { background: rgba(232,160,18,0.15); color: var(--accent); }
-  .entry-body { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+  .entries { display: flex; flex-direction: column; gap: var(--s-sm); }
 
-  /* ── Fields ─────────────────────────────── */
-  .fields-row { display: flex; flex-wrap: wrap; gap: 10px; }
-  .field-group { display: flex; flex-direction: column; gap: 4px; }
-  .field-group label {
-    font-size: 11px; font-weight: 600; color: var(--muted);
-    text-transform: uppercase; letter-spacing: 0.5px;
-  }
-  .field-group input, .field-group select {
-    padding: 7px 10px; font-size: 14px;
-    border: 1px solid var(--border); border-radius: 7px;
-    background: var(--surface); color: var(--text); outline: none;
+  /* ─── Entry Card ─────────────────────────────────────────────── */
+  .entry-card {
+    background: var(--surface-card);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-xl);
+    overflow: hidden;
     transition: border-color 0.15s;
   }
-  .field-group select { appearance: none; padding-right: 28px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%237a7f95' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; }
-  .field-group input:focus, .field-group select:focus { border-color: var(--accent); }
+  .entry-card:hover { border-color: var(--hairline-strong); }
+  .entry-card.open-card { border-color: var(--hairline-strong); }
 
-  /* ── Jenis row ──────────────────────────── */
-  .jenis-row { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
-  .jenis-row .field-group { flex: 1; min-width: 160px; }
-  .jenis-row .or-text { font-size: 11px; color: var(--muted); padding-bottom: 10px; }
-
-  /* ── Drop zones ─────────────────────────── */
-  .zones-row { display: flex; flex-wrap: wrap; gap: 16px; }
-  .drop-zone-wrap { flex: 1; min-width: 220px; }
-  .zone-label {
-    font-size: 11px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 1px; margin-bottom: 6px;
-    display: flex; align-items: center; gap: 6px;
+  .entry-header {
+    display: flex; align-items: center; gap: var(--s-sm);
+    padding: 14px 18px;
+    cursor: pointer;
+    transition: background 0.15s;
   }
-  .zone-label.transfer { color: var(--blue); }
-  .zone-label.nota { color: var(--accent); }
+  .entry-header:hover { background: rgba(255, 255, 255, 0.02); }
+  .entry-header.open { border-bottom: 1px solid var(--hairline); }
+  .entry-chevron {
+    width: 14px; height: 14px;
+    color: var(--muted-soft);
+    transition: transform 0.2s, color 0.15s;
+    flex-shrink: 0;
+  }
+  .entry-chevron.open { transform: rotate(90deg); color: var(--primary-glow); }
+  .entry-title {
+    flex: 1; font-size: 15px; font-weight: 500;
+    color: var(--body-strong);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .entry-code {
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--muted-soft);
+    padding: 4px 8px;
+    background: var(--canvas);
+    border-radius: var(--r-sm);
+    border: 1px solid var(--hairline);
+  }
+  .entry-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.88px;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--surface-card-elevated);
+    border-radius: var(--r-pill);
+  }
+  .entry-badge.has-data {
+    background: rgba(0, 7, 205, 0.18);
+    color: var(--primary-glow);
+  }
+  .entry-delete {
+    width: 32px; height: 32px;
+    display: grid; place-items: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--r-md);
+    color: var(--muted-soft);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .entry-delete:hover {
+    color: var(--error);
+    background: rgba(255, 77, 77, 0.08);
+    border-color: rgba(255, 77, 77, 0.2);
+  }
+  .entry-body {
+    padding: var(--s-md) var(--s-md) var(--s-md);
+    display: flex; flex-direction: column; gap: var(--s-base);
+    background: var(--canvas);
+    border-top: 1px solid var(--hairline-soft);
+  }
+
+  /* ─── Fields ─────────────────────────────────────────────────── */
+  .fields-row { display: flex; flex-wrap: wrap; gap: var(--s-sm); }
+  .field-group { display: flex; flex-direction: column; gap: 6px; }
+  .field-group label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.88px;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .field-group input, .field-group select {
+    background: var(--surface-card);
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--r-md);
+    padding: 10px 14px;
+    height: 40px;
+    font-size: 14px;
+    color: var(--body-strong);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .field-group input:focus, .field-group select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 7, 205, 0.2);
+  }
+  .field-group select {
+    appearance: none; padding-right: 32px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23888888' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+  }
+  .jenis-row { display: flex; gap: var(--s-xs); align-items: flex-end; flex-wrap: wrap; flex: 1; }
+  .jenis-row .field-group { flex: 1; min-width: 160px; }
+  .jenis-row .or-text {
+    font-size: 11px; color: var(--muted-soft);
+    padding-bottom: 12px; font-weight: 500;
+  }
+
+  /* ─── Drop zones ─────────────────────────────────────────────── */
+  .zones-row { display: flex; flex-wrap: wrap; gap: var(--s-base); }
+  .drop-zone-wrap { flex: 1; min-width: 240px; }
+  .zone-label {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.88px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    color: var(--muted);
+  }
+  .zone-label.transfer .indicator { background: var(--primary-glow); box-shadow: 0 0 8px var(--primary-glow); }
+  .zone-label.nota .indicator { background: var(--accent-cyan); box-shadow: 0 0 8px var(--accent-cyan); }
+  .zone-label .indicator { width: 6px; height: 6px; border-radius: 50%; }
   .zone-label .count {
-    background: rgba(255,255,255,0.08); padding: 1px 6px;
-    border-radius: 10px; font-size: 10px;
+    background: var(--surface-card-elevated);
+    color: var(--body-strong);
+    padding: 2px 8px;
+    border-radius: var(--r-pill);
+    font-size: 10px;
+    letter-spacing: 0;
   }
   .drop-zone {
-    border: 2px dashed var(--border); border-radius: var(--radius);
-    padding: 8px; text-align: center; cursor: pointer;
-    background: var(--surface); transition: all 0.2s;
-    min-height: 80px; position: relative;
+    background: var(--surface-card);
+    border: 1px dashed var(--hairline-strong);
+    border-radius: var(--r-lg);
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-height: 88px;
+    position: relative;
   }
-  .drop-zone.dragover { border-color: var(--accent); background: rgba(232,160,18,0.04); }
-  .drop-zone.empty { padding: 26px 8px; }
-  .drop-zone:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .drop-zone:focus {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+  }
+  .drop-zone:hover { border-color: var(--muted); }
+  .drop-zone.dragover {
+    border-color: var(--primary);
+    background: rgba(0, 7, 205, 0.06);
+    border-style: solid;
+  }
+  .drop-zone.empty { padding: 28px 12px; }
   .zone-placeholder {
     display: flex; flex-direction: column; align-items: center;
-    gap: 6px; color: var(--muted); font-size: 12px;
+    gap: 8px; color: var(--muted);
   }
   .zone-placeholder svg { opacity: 0.3; }
+  .zone-placeholder .ph-text { font-size: 13px; }
   .paste-hint {
-    font-size: 10px; color: var(--accent-dim);
-    margin-top: 4px; font-weight: 500;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted-soft);
+    background: var(--canvas-deep);
+    padding: 4px 10px;
+    border-radius: var(--r-sm);
+    margin-top: 4px;
+  }
+  .paste-hint kbd {
+    display: inline-block;
+    padding: 0 4px;
+    border: 1px solid var(--hairline-strong);
+    border-radius: 3px;
+    background: var(--surface-card);
+    color: var(--body-strong);
+    font-size: 10px;
   }
 
-  /* ── Thumbnails ─────────────────────────── */
-  .thumbs { display: flex; flex-wrap: wrap; gap: 6px; }
+  /* ─── Thumbnails ─────────────────────────────────────────────── */
+  .thumbs { display: flex; flex-wrap: wrap; gap: 8px; }
   .thumb {
-    position: relative; width: 70px; height: 70px;
-    border-radius: 6px; overflow: hidden;
-    border: 1px solid var(--border); flex-shrink: 0;
+    position: relative; width: 76px; height: 76px;
+    border-radius: var(--r-md); overflow: hidden;
+    border: 1px solid var(--hairline-strong);
+    flex-shrink: 0;
     cursor: grab; user-select: none;
+    background: var(--canvas-deep);
+    transition: transform 0.15s, border-color 0.15s;
   }
-  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .thumb:hover { border-color: var(--primary-glow); }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .thumb .grip {
-    position: absolute; top: 2px; left: 2px;
-    color: #fff; opacity: 0.5; pointer-events: none;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    position: absolute; top: 4px; left: 4px;
+    color: #fff; opacity: 0.7; pointer-events: none;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
   }
   .thumb .remove {
-    position: absolute; top: 2px; right: 2px;
-    width: 18px; height: 18px; border-radius: 3px;
-    background: rgba(0,0,0,0.65); color: #fff;
-    border: none; font-size: 10px; display: flex;
-    align-items: center; justify-content: center; cursor: pointer;
+    position: absolute; top: 4px; right: 4px;
+    width: 18px; height: 18px; border-radius: 4px;
+    background: rgba(0,0,0,0.75); color: #fff;
+    border: none; font-size: 11px; line-height: 1;
+    display: grid; place-items: center;
+    cursor: pointer;
+    transition: background 0.15s;
   }
-  .thumb.dragover { border: 2px solid var(--accent); }
-  .thumb.uploading::after {
-    content: ""; position: absolute; inset: 0;
-    background: rgba(0,0,0,0.6) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10' stroke-opacity='0.3'/%3E%3Cpath d='M12 2a10 10 0 0 1 10 10'%3E%3CanimateTransform attributeName='transform' type='rotate' from='0 12 12' to='360 12 12' dur='1s' repeatCount='indefinite'/%3E%3C/path%3E%3C/svg%3E") center/24px no-repeat;
-  }
+  .thumb .remove:hover { background: var(--error); }
+  .thumb.dragover { border: 2px solid var(--primary); transform: scale(1.05); }
 
-  /* ── Action row ─────────────────────────── */
+  /* ─── Entry actions ──────────────────────────────────────────── */
   .entry-actions {
-    display: flex; gap: 8px; flex-wrap: wrap; padding-top: 4px;
-    border-top: 1px solid var(--border); margin-top: 4px;
+    display: flex; gap: 8px; flex-wrap: wrap; padding-top: var(--s-sm);
+    border-top: 1px solid var(--hairline-soft);
   }
 
-  /* ── Empty state ────────────────────────── */
+  /* ─── Empty state (spotlight-glow card) ─────────────────────── */
   .empty-state {
-    text-align: center; padding: 48px 20px;
-    color: var(--muted); font-size: 14px;
+    position: relative;
+    text-align: center;
+    padding: 64px 32px;
+    background: var(--surface-card);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-xl);
+    overflow: hidden;
   }
-  .empty-state .icon { font-size: 40px; margin-bottom: 10px; opacity: 0.3; }
+  .empty-state::before {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(50% 50% at 50% 50%, rgba(26, 38, 255, 0.10), transparent 70%);
+    pointer-events: none;
+  }
+  .empty-state > * { position: relative; z-index: 1; }
+  .empty-state .icon {
+    width: 56px; height: 56px;
+    margin: 0 auto 16px;
+    background: var(--surface-card-elevated);
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--r-lg);
+    display: grid; place-items: center;
+    color: var(--primary-glow);
+  }
+  .empty-state .title { color: var(--ink); margin-bottom: 6px; }
+  .empty-state .sub { color: var(--body); font-size: 14px; }
 
-  /* ── Summary ────────────────────────────── */
+  /* ─── Summary card ───────────────────────────────────────────── */
   .summary {
-    margin-top: 20px; padding: 14px 16px;
-    background: var(--card); border-radius: var(--radius);
-    border: 1px solid var(--border);
-    display: flex; flex-wrap: wrap; gap: 20px; font-size: 13px;
-    align-items: center;
+    margin-top: var(--s-lg);
+    background: var(--surface-card);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-xl);
+    overflow: hidden;
   }
-  .summary span { color: var(--muted); }
-  .summary strong { color: var(--accent); font-weight: 700; }
-  .summary .actions { margin-left: auto; display: flex; gap: 8px; }
+  .summary-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    border-bottom: 1px solid var(--hairline-soft);
+  }
+  .stat {
+    padding: 18px 20px;
+    border-right: 1px solid var(--hairline-soft);
+  }
+  .stat:last-child { border-right: none; }
+  .stat-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.88px;
+    text-transform: uppercase; color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .stat-value {
+    font-size: 24px; font-weight: 500; line-height: 1.2;
+    letter-spacing: -0.5px;
+    color: var(--ink);
+    font-family: var(--font-mono);
+  }
+  .summary-actions {
+    display: flex; gap: 8px; padding: 14px 20px;
+    align-items: center; flex-wrap: wrap;
+  }
+  .summary-actions .help-text {
+    flex: 1; font-size: 12px; color: var(--muted-soft);
+    font-family: var(--font-mono);
+  }
 
-  /* ── Toast ──────────────────────────────── */
+  /* ─── Toast ──────────────────────────────────────────────────── */
   .toast {
-    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-    background: var(--green); color: #fff; padding: 10px 20px;
-    border-radius: 8px; font-size: 13px; font-weight: 600;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-    opacity: 0; pointer-events: none; transition: opacity 0.3s, transform 0.3s;
+    position: fixed; bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface-card-elevated);
+    border: 1px solid var(--hairline-strong);
+    color: var(--body-strong);
+    padding: 12px 20px;
+    border-radius: var(--r-lg);
+    font-size: 13px; font-weight: 500;
+    box-shadow: 0 16px 48px -16px rgba(0, 0, 0, 0.6);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
     z-index: 999;
+    display: flex; align-items: center; gap: 10px;
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-  .toast.error { background: var(--danger); }
-  .toast.info { background: var(--blue); }
+  .toast::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--success); box-shadow: 0 0 6px currentColor;
+  }
+  .toast.error { color: var(--error); }
+  .toast.error::before { background: var(--error); }
+  .toast.info { color: var(--primary-glow); }
+  .toast.info::before { background: var(--primary-glow); }
 
-  /* ── Modal ─────────────────────────────── */
+  /* ─── Modal ──────────────────────────────────────────────────── */
   .modal-backdrop {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
     display: none; align-items: center; justify-content: center;
-    z-index: 1000; backdrop-filter: blur(4px);
+    z-index: 1000;
   }
   .modal-backdrop.show { display: flex; }
   .modal {
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 12px; padding: 24px; max-width: 420px; width: 90%;
+    background: var(--surface-card);
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--r-xl);
+    padding: 28px;
+    max-width: 440px; width: 90%;
+    box-shadow: 0 32px 64px -16px rgba(0, 0, 0, 0.8);
   }
-  .modal h3 { font-size: 16px; margin-bottom: 8px; }
-  .modal p { color: var(--muted); font-size: 13px; margin-bottom: 16px; line-height: 1.5; }
+  .modal h3 {
+    font-size: 18px; font-weight: 600; line-height: 1.4;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .modal p {
+    color: var(--body); font-size: 14px;
+    margin-bottom: 24px; line-height: 1.5;
+  }
   .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
-  @media (max-width: 600px) {
-    .header-controls .field { min-width: 100%; }
-    .export-btns { width: 100%; justify-content: stretch; }
-    .export-btns .btn { flex: 1; justify-content: center; }
+  /* ─── Responsive ─────────────────────────────────────────────── */
+  @media (max-width: 768px) {
+    .hero { padding: var(--s-xl) var(--s-base); }
+    .hero-title { font-size: 32px; letter-spacing: -0.96px; }
+    .hero-controls { flex-direction: column; align-items: stretch; }
+    .hero-controls .field { width: 100%; }
+    .export-btns { width: 100%; }
+    .export-btns .btn { flex: 1; padding: 0 12px; }
+    .top-nav-inner { padding: 0 var(--s-base); }
+    .content { padding: var(--s-md) var(--s-base) var(--s-xxl); }
+    .summary-stats { grid-template-columns: repeat(2, 1fr); }
+    .stat:nth-child(2) { border-right: none; }
+    .stat:nth-child(1), .stat:nth-child(2) { border-bottom: 1px solid var(--hairline-soft); }
   }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="header-inner">
-    <div class="brand">
-      <div class="brand-badge">AGE BALI</div>
-      <div>
-        <div class="brand-title">LPJ Report Builder</div>
-        <div class="brand-sub">Ayam Guling Enakko — Bukti Nota & Transfer</div>
-      </div>
-      <div class="brand-save-state" id="saveState" title="Status auto-save">
-        <span class="dot" id="saveDot"></span>
-        <span id="saveText">Tersimpan</span>
-      </div>
+<nav class="top-nav">
+  <div class="top-nav-inner">
+    <div class="wordmark">
+      <div class="glyph">L</div>
+      <span>AGE BALI <span class="label-thin">/ LPJ Builder</span></span>
     </div>
-    <div class="header-controls">
+    <div class="nav-spacer"></div>
+    <div class="save-state" id="saveState" title="Status auto-save">
+      <span class="dot" id="saveDot"></span>
+      <span id="saveText">Tersimpan</span>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-eyebrow">
+      <span class="dot"></span>
+      <span class="t-caption-up">Ayam Guling Enakko</span>
+    </div>
+    <h1 class="hero-title">Laporan Pertanggungjawaban<br><em>bukti nota & transfer</em></h1>
+    <p class="hero-sub">Tambah entri pembelian, tempel bukti transfer dan nota, lalu export ke DOCX, XLSX, atau PDF dengan tata letak yang siap dilaporkan.</p>
+
+    <div class="hero-controls">
       <div class="field">
         <label>Judul Laporan</label>
-        <input id="reportTitle" value="BUKTI NOTA LPJ MONANG MANING" oninput="onTitleChange()">
+        <input class="text-input" id="reportTitle" value="BUKTI NOTA LPJ MONANG MANING" oninput="onTitleChange()" autocomplete="off">
       </div>
       <div class="export-btns">
-        <button class="btn btn-green" onclick="exportFile('xlsx')" id="btnXlsx" disabled>
-          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+        <button class="btn btn-outline" onclick="exportFile('xlsx')" id="btnXlsx" disabled>
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
           XLSX
         </button>
-        <button class="btn btn-blue" onclick="exportFile('docx')" id="btnDocx" disabled>
-          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+        <button class="btn btn-outline" onclick="exportFile('docx')" id="btnDocx" disabled>
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
           DOCX
         </button>
-        <button class="btn btn-red" onclick="exportFile('pdf')" id="btnPdf" disabled>
-          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
-          PDF
+        <button class="btn btn-primary" onclick="exportFile('pdf')" id="btnPdf" disabled>
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+          Export PDF
         </button>
       </div>
     </div>
   </div>
-</div>
+</section>
 
-<div class="content">
-  <div class="entries" id="entriesList"></div>
-  <div class="empty-state" id="emptyState">
-    <div class="icon">📋</div>
-    <div>Belum ada entri. Klik tombol di bawah untuk mulai.</div>
+<main class="content">
+  <div class="section-label">
+    <span class="t-caption-up">Entri Pembelian</span>
   </div>
-  <button class="btn btn-accent btn-full" style="margin-top:16px" onclick="addEntry()">
-    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+  <div class="entries" id="entriesList"></div>
+
+  <div class="empty-state" id="emptyState">
+    <div class="icon">
+      <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+    </div>
+    <div class="t-display-sm title">Belum ada entri</div>
+    <div class="sub">Klik tombol di bawah untuk menambah entri pembelian pertama.</div>
+  </div>
+
+  <button class="btn btn-primary btn-full" style="margin-top: 20px" onclick="addEntry()">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
     Tambah Entri Pembelian
   </button>
-  <div class="summary" id="summary" style="display:none">
-    <div><span>Total Entri:</span> <strong id="sumEntries">0</strong></div>
-    <div><span>Total Bukti Transfer:</span> <strong id="sumTransfer">0</strong></div>
-    <div><span>Total Bukti Nota:</span> <strong id="sumNota">0</strong></div>
-    <div><span>Ukuran Data:</span> <strong id="sumSize">0 KB</strong></div>
-    <div class="actions">
+
+  <div class="summary" id="summary" style="display: none">
+    <div class="summary-stats">
+      <div class="stat">
+        <div class="stat-label">Total Entri</div>
+        <div class="stat-value" id="sumEntries">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Bukti Transfer</div>
+        <div class="stat-value" id="sumTransfer">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Bukti Nota</div>
+        <div class="stat-value" id="sumNota">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Ukuran Data</div>
+        <div class="stat-value" id="sumSize" style="font-size: 18px">0 KB</div>
+      </div>
+    </div>
+    <div class="summary-actions">
+      <span class="help-text">~ auto-save aktif</span>
       <button class="btn btn-ghost" onclick="exportJSON()" title="Backup data sebagai JSON">
-        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
         Backup
       </button>
       <button class="btn btn-ghost" onclick="importJSON()" title="Restore dari file backup">
-        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 12l4.5-4.5m0 0L16.5 12M12 7.5V21"/></svg>
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 12l4.5-4.5m0 0L16.5 12M12 7.5V21"/></svg>
         Restore
       </button>
-      <button class="btn btn-ghost" onclick="confirmReset()" style="color:var(--danger);border-color:rgba(239,68,68,0.3)" title="Hapus semua entri">
-        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79"/></svg>
+      <button class="btn btn-danger" onclick="confirmReset()" title="Hapus semua entri">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79"/></svg>
         Reset
       </button>
     </div>
   </div>
-</div>
+</main>
 
 <div class="toast" id="toast"></div>
 
@@ -346,8 +746,8 @@
     <h3 id="confirmTitle">Konfirmasi</h3>
     <p id="confirmMsg">Yakin ingin melakukan tindakan ini?</p>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeConfirm()">Batal</button>
-      <button class="btn btn-red" id="confirmOk">Hapus</button>
+      <button class="btn btn-outline" onclick="closeConfirm()">Batal</button>
+      <button class="btn btn-primary" id="confirmOk">Konfirmasi</button>
     </div>
   </div>
 </div>
@@ -376,11 +776,10 @@ const JENIS_PRESETS = [
   "SEWA",
 ];
 
-// Image processing config
-const MAX_IMAGE_DIM = 1400;     // resize longest side to this on upload
-const JPEG_QUALITY = 0.82;       // upload quality
-const PDF_IMAGE_QUALITY = 0.85;  // pdf re-render quality
-const PDF_IMAGE_MAX_DIM = 900;   // pdf re-render dimension
+const MAX_IMAGE_DIM = 1400;
+const JPEG_QUALITY = 0.82;
+const PDF_IMAGE_QUALITY = 0.85;
+const PDF_IMAGE_MAX_DIM = 900;
 
 // ─── Utility ────────────────────────────────────────────────────────────
 const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
@@ -416,7 +815,7 @@ function setSaveState(state) {
   const text = document.getElementById("saveText");
   if (state === "saving") {
     dot.classList.add("saving");
-    text.textContent = "Menyimpan...";
+    text.textContent = "Menyimpan…";
   } else if (state === "saved") {
     dot.classList.remove("saving");
     text.textContent = "Tersimpan";
@@ -469,7 +868,7 @@ function restore() {
 
 function onTitleChange() { persist(); }
 
-// ─── Image resize (client-side compression) ────────────────────────────
+// ─── Image resize ───────────────────────────────────────────────────────
 function resizeImage(dataUrl, maxDim = MAX_IMAGE_DIM, quality = JPEG_QUALITY) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -485,7 +884,6 @@ function resizeImage(dataUrl, maxDim = MAX_IMAGE_DIM, quality = JPEG_QUALITY) {
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext("2d");
-      // White background to handle PNG transparency
       ctx.fillStyle = "#FFFFFF";
       ctx.fillRect(0, 0, width, height);
       ctx.drawImage(img, 0, 0, width, height);
@@ -521,7 +919,6 @@ function addEntry(prefill) {
   persist();
   showToast("Entri ditambahkan");
 
-  // Scroll to new entry
   requestAnimationFrame(() => {
     const el = document.querySelector(`[data-id="${e.id}"]`);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -554,7 +951,7 @@ function updateEntryTitle(id) {
   const idx = entries.indexOf(e);
   const titleEl = document.querySelector(`[data-id="${id}"] .entry-title`);
   if (titleEl) {
-    titleEl.textContent = `#${idx+1} — ${e.jenis || "Entri Baru"} ${e.tanggal ? `(${e.tanggal})` : ""}`;
+    titleEl.textContent = `${String(idx+1).padStart(2,'0')} · ${e.jenis || "Entri Baru"}${e.tanggal ? ` — ${e.tanggal}` : ""}`;
   }
 }
 
@@ -586,7 +983,7 @@ function reorderImages(entryId, field, fromIdx, toIdx) {
 async function handleFiles(files, entryId, field) {
   const valid = Array.from(files).filter(f => f.type.startsWith("image/"));
   if (!valid.length) return;
-  showToast(`Memproses ${valid.length} gambar...`, "info");
+  showToast(`Memproses ${valid.length} gambar…`, "info");
   const imgs = [];
   for (const f of valid) {
     try {
@@ -624,24 +1021,21 @@ function render() {
   const summary = document.getElementById("summary");
 
   empty.style.display = entries.length ? "none" : "block";
-  summary.style.display = entries.length ? "flex" : "none";
+  summary.style.display = entries.length ? "block" : "none";
 
   const hasEntries = entries.length > 0 && !exporting;
   document.getElementById("btnXlsx").disabled = !hasEntries;
   document.getElementById("btnDocx").disabled = !hasEntries;
   document.getElementById("btnPdf").disabled = !hasEntries;
 
-  document.getElementById("sumEntries").textContent = entries.length;
-  document.getElementById("sumTransfer").textContent = entries.reduce((s,e) => s + e.transfer.length, 0);
-  document.getElementById("sumNota").textContent = entries.reduce((s,e) => s + e.nota.length, 0);
+  document.getElementById("sumEntries").textContent = String(entries.length).padStart(2, '0');
+  document.getElementById("sumTransfer").textContent = String(entries.reduce((s,e) => s + e.transfer.length, 0)).padStart(2, '0');
+  document.getElementById("sumNota").textContent = String(entries.reduce((s,e) => s + e.nota.length, 0)).padStart(2, '0');
 
-  // Approximate data size
   let bytes = 0;
   for (const e of entries) {
     for (const arr of [e.transfer, e.nota]) {
-      for (const img of arr) {
-        bytes += (img.url?.length || 0) * 0.75; // base64 → binary approx
-      }
+      for (const img of arr) bytes += (img.url?.length || 0) * 0.75;
     }
   }
   document.getElementById("sumSize").textContent = formatBytes(bytes);
@@ -651,23 +1045,22 @@ function render() {
     const tCount = e.transfer.length, nCount = e.nota.length;
     const hasData = tCount > 0 || nCount > 0;
     return `
-    <div class="entry-card" data-id="${e.id}">
+    <div class="entry-card ${isOpen ? 'open-card' : ''}" data-id="${e.id}">
       <div class="entry-header ${isOpen ? 'open' : ''}" onclick="toggleEntry('${e.id}')">
-        <svg class="entry-chevron ${isOpen ? 'open' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg class="entry-chevron ${isOpen ? 'open' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
         </svg>
-        <span class="entry-title">#${idx+1} — ${escHtml(e.jenis || "Entri Baru")} ${e.tanggal ? `(${escHtml(e.tanggal)})` : ""}</span>
-        <span class="entry-badge ${hasData ? 'has-data' : ''}" title="Bukti transfer + nota">📎 ${tCount + nCount}</span>
+        <span class="entry-title">${String(idx+1).padStart(2,'0')} · ${escHtml(e.jenis || "Entri Baru")}${e.tanggal ? ` — ${escHtml(e.tanggal)}` : ""}</span>
+        <span class="entry-badge ${hasData ? 'has-data' : ''}">${tCount + nCount} bukti</span>
         <span class="entry-code">${escHtml(e.kode)}</span>
-        <button class="btn-ghost" style="border:none;color:var(--danger);padding:4px" onclick="event.stopPropagation();deleteEntry('${e.id}')" title="Hapus">
-          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+        <button class="entry-delete" onclick="event.stopPropagation();deleteEntry('${e.id}')" title="Hapus entri" aria-label="Hapus entri">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79"/></svg>
         </button>
       </div>
       ${isOpen ? renderEntryBody(e, idx) : ""}
     </div>`;
   }).join("");
 
-  // Rebind paste listeners
   document.querySelectorAll("[data-paste-zone]").forEach(zone => {
     zone.setAttribute("tabindex", "0");
     zone.onpaste = (ev) => {
@@ -681,25 +1074,25 @@ function renderEntryBody(e, idx) {
   return `
   <div class="entry-body">
     <div class="fields-row">
-      <div class="jenis-row" style="flex:1">
-        <div class="field-group" style="flex:1;min-width:140px">
-          <label>Jenis Pembelian (ketik manual)</label>
+      <div class="jenis-row">
+        <div class="field-group" style="flex:1;min-width:160px">
+          <label>Jenis Pembelian</label>
           <input value="${escHtml(e.jenis)}" placeholder="cth: ONLINE/SHOPEE"
-            oninput="updateEntry('${e.id}','jenis',this.value)">
+            oninput="updateEntry('${e.id}','jenis',this.value)" autocomplete="off">
         </div>
         <div class="or-text">atau</div>
-        <div class="field-group" style="min-width:160px">
+        <div class="field-group" style="min-width:180px">
           <label>Pilih Cepat</label>
           <select onchange="if(this.value){updateEntry('${e.id}','jenis',this.value);this.value=''}">
-            <option value="">— Pilih —</option>
+            <option value="">— Preset —</option>
             ${JENIS_PRESETS.map(j => `<option value="${escHtml(j)}">${escHtml(j)}</option>`).join("")}
           </select>
         </div>
       </div>
-      <div class="field-group" style="min-width:140px">
-        <label>Tanggal (ketik/paste)</label>
+      <div class="field-group" style="min-width:160px">
+        <label>Tanggal</label>
         <input value="${escHtml(e.tanggal)}" placeholder="cth: 02/01/2026"
-          oninput="updateEntry('${e.id}','tanggal',this.value)">
+          oninput="updateEntry('${e.id}','tanggal',this.value)" autocomplete="off">
       </div>
     </div>
 
@@ -710,7 +1103,7 @@ function renderEntryBody(e, idx) {
 
     <div class="entry-actions">
       <button class="btn btn-ghost" onclick="duplicateEntry('${e.id}')">
-        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75"/></svg>
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75"/></svg>
         Duplikat Entri (Hari Sama)
       </button>
     </div>
@@ -719,11 +1112,15 @@ function renderEntryBody(e, idx) {
 
 function renderDropZone(entry, field, label) {
   const imgs = entry[field];
-  const accent = field === "transfer" ? "blue" : "nota";
+  const accent = field === "transfer" ? "transfer" : "nota";
   const isEmpty = !imgs.length;
   return `
   <div class="drop-zone-wrap">
-    <div class="zone-label ${accent}">${label} <span class="count">${imgs.length}</span></div>
+    <div class="zone-label ${accent}">
+      <span class="indicator"></span>
+      <span>${label}</span>
+      <span class="count">${imgs.length}</span>
+    </div>
     <div class="drop-zone ${isEmpty ? 'empty' : ''}"
       data-paste-zone="${entry.id}|${field}"
       ondragover="event.preventDefault();this.classList.add('dragover')"
@@ -732,11 +1129,11 @@ function renderDropZone(entry, field, label) {
       onclick="triggerFileInput('${entry.id}','${field}')">
       ${isEmpty ? `
         <div class="zone-placeholder">
-          <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+          <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z"/>
           </svg>
-          <span>Drop gambar atau klik upload</span>
-          <div class="paste-hint">💡 Klik zona ini lalu Ctrl+V untuk paste dari clipboard</div>
+          <span class="ph-text">Drop gambar atau klik untuk upload</span>
+          <div class="paste-hint">paste: <kbd>Ctrl</kbd> + <kbd>V</kbd></div>
         </div>
       ` : `
         <div class="thumbs">
@@ -747,8 +1144,8 @@ function renderDropZone(entry, field, label) {
               ondragleave="this.classList.remove('dragover')"
               ondrop="handleThumbDrop(event,'${entry.id}','${field}',${i})">
               <img src="${img.url}" alt="${escHtml(img.name)}" loading="lazy">
-              <div class="grip"><svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg></div>
-              <button class="remove" onclick="event.stopPropagation();removeImage('${entry.id}','${field}','${img.id}')" title="Hapus gambar">✕</button>
+              <div class="grip"><svg width="11" height="11" fill="currentColor" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg></div>
+              <button class="remove" onclick="event.stopPropagation();removeImage('${entry.id}','${field}','${img.id}')" title="Hapus" aria-label="Hapus gambar">✕</button>
             </div>
           `).join("")}
         </div>
@@ -797,11 +1194,12 @@ document.addEventListener("paste", async (e) => {
 });
 
 // ─── Confirm Modal ─────────────────────────────────────────────────────
-function showConfirm({ title, message, okLabel, onOk }) {
+function showConfirm({ title, message, okLabel, onOk, danger }) {
   document.getElementById("confirmTitle").textContent = title || "Konfirmasi";
   document.getElementById("confirmMsg").textContent = message;
   const okBtn = document.getElementById("confirmOk");
   okBtn.textContent = okLabel || "Konfirmasi";
+  okBtn.className = "btn " + (danger ? "btn-danger" : "btn-primary");
   okBtn.onclick = () => { onOk(); closeConfirm(); };
   document.getElementById("confirmModal").classList.add("show");
 }
@@ -814,6 +1212,7 @@ function confirmReset() {
     title: "Hapus Semua Entri?",
     message: `${entries.length} entri akan dihapus permanen. Tindakan ini tidak bisa dibatalkan. Gunakan Backup dulu jika perlu menyimpan data.`,
     okLabel: "Ya, Hapus Semua",
+    danger: true,
     onOk: () => {
       entries = [];
       openEntries = new Set();
@@ -824,7 +1223,7 @@ function confirmReset() {
   });
 }
 
-// ─── Backup / Restore JSON ─────────────────────────────────────────────
+// ─── Backup / Restore ──────────────────────────────────────────────────
 function exportJSON() {
   const data = {
     version: 2,
@@ -872,7 +1271,7 @@ function importJSON() {
   inp.click();
 }
 
-// ─── Export DOCX/XLSX via serverless ───────────────────────────────────
+// ─── Export DOCX/XLSX ──────────────────────────────────────────────────
 async function exportFile(type) {
   if (exporting) return;
   const title = document.getElementById("reportTitle").value || "LPJ_Report";
@@ -883,12 +1282,10 @@ async function exportFile(type) {
   const btn = document.getElementById(`btn${type === "docx" ? "Docx" : "Xlsx"}`);
   const originalHTML = btn.innerHTML;
   btn.disabled = true;
-  btn.innerHTML = `<span class="spinner"></span> Mengekspor...`;
+  btn.innerHTML = `<span class="spinner"></span> Mengekspor…`;
 
   try {
-    showToast(`Mengekspor ${type.toUpperCase()}...`, "info");
-
-    // Send compressed entries (image URLs are already resized at upload time)
+    showToast(`Mengekspor ${type.toUpperCase()}…`, "info");
     const payload = JSON.stringify({ entries, title, subtitle: "Ayam Guling Enakko" });
 
     const res = await fetch(`/api/export/${type}`, {
@@ -911,7 +1308,7 @@ async function exportFile(type) {
     a.download = `${title.replace(/\s+/g,"_")}_${stamp}.${type}`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast(`${type.toUpperCase()} berhasil diunduh!`);
+    showToast(`${type.toUpperCase()} berhasil diunduh`);
   } catch (err) {
     console.error(err);
     showToast(`Gagal export: ${err.message}`, "error");
@@ -923,7 +1320,7 @@ async function exportFile(type) {
   }
 }
 
-// ─── Export PDF (client-side, enhanced) ─────────────────────────────────
+// ─── Export PDF (client-side) ─────────────────────────────────────────
 async function recompressForPDF(dataUrl) {
   return resizeImage(dataUrl, PDF_IMAGE_MAX_DIM, PDF_IMAGE_QUALITY);
 }
@@ -934,26 +1331,23 @@ async function exportPDF(title) {
   const btn = document.getElementById("btnPdf");
   const originalHTML = btn.innerHTML;
   btn.disabled = true;
-  btn.innerHTML = `<span class="spinner"></span> Membuat PDF...`;
+  btn.innerHTML = `<span class="spinner"></span> Membuat PDF…`;
 
   try {
-    showToast("Membuat PDF...", "info");
+    showToast("Membuat PDF…", "info");
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
 
-    // Page dimensions
     const W = 210, H = 297;
     const M_L = 15, M_R = 15, M_T = 22, M_B = 18;
-    const CW = W - M_L - M_R; // content width
+    const CW = W - M_L - M_R;
     const subtitle = "Ayam Guling Enakko";
 
-    // Colors
     const C_BRAND = [212, 160, 23];
     const C_BRAND_DARK = [138, 104, 16];
     const C_TEXT = [31, 41, 55];
     const C_MUTED = [107, 114, 128];
     const C_BLUE = [59, 130, 246];
-    const C_ZEBRA = [250, 247, 240];
 
     let pageNum = 0;
     const dateStr = new Date().toLocaleDateString("id-ID", {
@@ -962,7 +1356,6 @@ async function exportPDF(title) {
 
     function drawHeader() {
       pageNum++;
-      // Brand bar
       doc.setFillColor(...C_BRAND);
       doc.rect(0, 0, W, 12, "F");
       doc.setTextColor(0, 0, 0);
@@ -972,7 +1365,6 @@ async function exportPDF(title) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       doc.text("AGE BALI — LPJ Report", W - M_R, 8, { align: "right" });
-      // Underline accent
       doc.setDrawColor(...C_BRAND_DARK);
       doc.setLineWidth(0.3);
       doc.line(0, 12, W, 12);
@@ -1006,7 +1398,6 @@ async function exportPDF(title) {
       }
     }
 
-    // Title section
     doc.setTextColor(...C_TEXT);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(18);
@@ -1023,7 +1414,6 @@ async function exportPDF(title) {
     doc.text(`Dicetak: ${dateStr}`, W / 2, y + 3, { align: "center" });
     y += 10;
 
-    // Summary card
     const totalT = entries.reduce((s, e) => s + e.transfer.length, 0);
     const totalN = entries.reduce((s, e) => s + e.nota.length, 0);
     doc.setFillColor(250, 247, 240);
@@ -1032,7 +1422,6 @@ async function exportPDF(title) {
     doc.roundedRect(M_L, y, CW, 14, 2, 2, "FD");
     doc.setTextColor(...C_TEXT);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
     const stats = [
       { label: "Entri", val: String(entries.length) },
       { label: "Bukti Transfer", val: String(totalT) },
@@ -1052,7 +1441,6 @@ async function exportPDF(title) {
     });
     y += 20;
 
-    // Pre-compress images for PDF (use smaller versions)
     const compressedCache = new Map();
     async function getCompressed(img) {
       if (compressedCache.has(img.id)) return compressedCache.get(img.id);
@@ -1061,47 +1449,12 @@ async function exportPDF(title) {
       return small;
     }
 
-    // Entries — each as a card with multi-column image grid
-    for (let i = 0; i < entries.length; i++) {
-      const entry = entries[i];
-
-      ensureSpace(24);
-
-      // Entry header bar
-      doc.setFillColor(...C_BRAND);
-      doc.rect(M_L, y, CW, 9, "F");
-      doc.setTextColor(255, 255, 255);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.text(`${i + 1}. ${(entry.jenis || "—").toUpperCase()}`, M_L + 3, y + 6);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      const rightInfo = `${entry.tanggal || "—"}  •  ${entry.kode || ""}`;
-      doc.text(rightInfo, W - M_R - 3, y + 6, { align: "right" });
-      doc.setTextColor(...C_TEXT);
-      y += 11;
-
-      // Section: transfer images
-      await drawImageGrid(entry.transfer, "BUKTI TRANSFER", C_BLUE);
-      // Section: nota images
-      await drawImageGrid(entry.nota, "BUKTI NOTA", C_BRAND);
-
-      y += 4;
-      // Separator
-      doc.setDrawColor(229, 231, 235);
-      doc.setLineWidth(0.2);
-      doc.line(M_L, y, W - M_R, y);
-      y += 4;
-    }
-
     async function drawImageGrid(images, label, labelColor) {
-      // Label
       ensureSpace(7);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       doc.setTextColor(...labelColor);
       doc.text(label, M_L, y + 3);
-      // accent bar under label
       doc.setFillColor(...labelColor);
       doc.rect(M_L, y + 4.5, 18, 0.6, "F");
       doc.setTextColor(...C_TEXT);
@@ -1117,21 +1470,17 @@ async function exportPDF(title) {
         return;
       }
 
-      // Grid: 3 columns
       const COLS = 3;
       const GAP = 3;
-      const CELL_W = (CW - GAP * (COLS - 1)) / COLS; // ~58mm
-      const CELL_H = CELL_W * 1.3; // 3:4 ratio
+      const CELL_W = (CW - GAP * (COLS - 1)) / COLS;
+      const CELL_H = CELL_W * 1.3;
 
       for (let i = 0; i < images.length; i++) {
         const col = i % COLS;
-        if (col === 0) {
-          ensureSpace(CELL_H + 4);
-        }
+        if (col === 0) ensureSpace(CELL_H + 4);
         const x = M_L + col * (CELL_W + GAP);
         try {
           const compressed = await getCompressed(images[i]);
-          // Light gray background for image cell
           doc.setFillColor(243, 244, 246);
           doc.setDrawColor(209, 213, 219);
           doc.setLineWidth(0.2);
@@ -1146,13 +1495,36 @@ async function exportPDF(title) {
       }
     }
 
-    // Final footer with total page count
-    const totalPages = doc.internal.pages.length - 1; // jsPDF pages start at 1
-    // Re-stamp footers with total count
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
+      ensureSpace(24);
+      doc.setFillColor(...C_BRAND);
+      doc.rect(M_L, y, CW, 9, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text(`${i + 1}. ${(entry.jenis || "—").toUpperCase()}`, M_L + 3, y + 6);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      const rightInfo = `${entry.tanggal || "—"}  •  ${entry.kode || ""}`;
+      doc.text(rightInfo, W - M_R - 3, y + 6, { align: "right" });
+      doc.setTextColor(...C_TEXT);
+      y += 11;
+
+      await drawImageGrid(entry.transfer, "BUKTI TRANSFER", C_BLUE);
+      await drawImageGrid(entry.nota, "BUKTI NOTA", C_BRAND);
+
+      y += 4;
+      doc.setDrawColor(229, 231, 235);
+      doc.setLineWidth(0.2);
+      doc.line(M_L, y, W - M_R, y);
+      y += 4;
+    }
+
+    const totalPages = doc.internal.pages.length - 1;
     for (let p = 1; p <= totalPages; p++) {
       doc.setPage(p);
-      pageNum = p; // override
-      // Clear footer area (white rect)
+      pageNum = p;
       doc.setFillColor(255, 255, 255);
       doc.rect(0, H - M_B - 1, W, M_B + 1, "F");
       drawFooter(totalPages);
@@ -1160,7 +1532,7 @@ async function exportPDF(title) {
 
     const stamp = new Date().toISOString().slice(0, 10);
     doc.save(`${title.replace(/\s+/g, "_")}_${stamp}.pdf`);
-    showToast("PDF berhasil diunduh!");
+    showToast("PDF berhasil diunduh");
   } catch (err) {
     console.error(err);
     showToast(`Gagal export PDF: ${err.message}`, "error");
@@ -1176,12 +1548,11 @@ async function exportPDF(title) {
 (function init() {
   const restored = restore();
   if (restored && entries.length) {
-    showToast(`Memuat ${entries.length} entri dari tersimpan otomatis`, "info");
+    showToast(`Memuat ${entries.length} entri tersimpan`, "info");
   }
   render();
   setSaveState("saved");
 
-  // Warn before leaving if there are unsaved changes during export
   window.addEventListener("beforeunload", (e) => {
     if (exporting) {
       e.preventDefault();
