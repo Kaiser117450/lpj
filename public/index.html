@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0c0e14">
+<meta name="description" content="AGE BALI - LPJ Report Builder untuk Ayam Guling Enakko. Buat laporan bukti nota & transfer dalam format DOCX, XLSX, dan PDF.">
+<title>AGE BALI — LPJ Report Builder</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23e8a012'/%3E%3Ctext x='50' y='66' font-size='52' font-weight='800' text-anchor='middle' fill='%23000' font-family='system-ui'%3EL%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0e14; --card: #14161f; --surface: #1a1d28;
+    --border: #262a38; --text: #e4e6ec; --muted: #7a7f95;
+    --accent: #e8a012; --accent-dim: #b47d0e; --blue: #3b82f6;
+    --danger: #ef4444; --green: #22c55e; --red-bg: #dc2626;
+    --radius: 10px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh;
+  }
+  button { font-family: inherit; cursor: pointer; }
+  input, select { font-family: inherit; }
+
+  /* ── Header ─────────────────────────────── */
+  .header {
+    background: linear-gradient(135deg, #14161f 0%, #1a1510 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 22px 20px 18px;
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+  .header-inner { max-width: 880px; margin: 0 auto; }
+  .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .brand-badge {
+    background: var(--accent); color: #000; font-weight: 800;
+    font-size: 12px; padding: 4px 10px; border-radius: 5px;
+    letter-spacing: 1.2px;
+  }
+  .brand-title { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+  .brand-sub { font-size: 12px; color: var(--muted); }
+  .brand-save-state {
+    margin-left: auto; font-size: 11px; color: var(--muted);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .brand-save-state .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green); display: inline-block;
+  }
+  .brand-save-state .dot.saving { background: var(--accent); animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: 0.3; } }
+
+  .header-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+  .header-controls .field { flex: 1; min-width: 200px; }
+  .header-controls .field label {
+    display: block; font-size: 11px; font-weight: 600; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px;
+  }
+  .header-controls .field input {
+    width: 100%; padding: 8px 10px; font-size: 15px; font-weight: 600;
+    border: 1px solid var(--border); border-radius: 7px;
+    background: rgba(255,255,255,0.04); color: var(--text); outline: none;
+    transition: border-color 0.15s;
+  }
+  .header-controls .field input:focus { border-color: var(--accent); }
+  .export-btns { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
+
+  /* ── Buttons ────────────────────────────── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 8px; border: none;
+    color: #fff; font-weight: 600; font-size: 13px;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn:hover:not([disabled]) { opacity: 0.88; }
+  .btn:active:not([disabled]) { transform: scale(0.97); }
+  .btn-accent { background: var(--accent); color: #000; }
+  .btn-green { background: var(--green); }
+  .btn-red { background: var(--red-bg); }
+  .btn-blue { background: var(--blue); }
+  .btn-ghost {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--muted); font-size: 12px; padding: 5px 10px;
+  }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-full { width: 100%; justify-content: center; padding: 12px 20px; font-size: 14px; font-weight: 700; }
+  .btn[disabled] { opacity: 0.35; pointer-events: none; cursor: not-allowed; }
+  .btn .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid currentColor; border-top-color: transparent;
+    border-radius: 50%; animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Content ────────────────────────────── */
+  .content { max-width: 880px; margin: 0 auto; padding: 20px 20px 100px; }
+  .entries { display: flex; flex-direction: column; gap: 12px; }
+
+  /* ── Entry Card ─────────────────────────── */
+  .entry-card {
+    background: var(--card); border-radius: 12px;
+    border: 1px solid var(--border); overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .entry-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 16px; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .entry-header:hover { background: var(--surface); }
+  .entry-header.open { background: var(--surface); border-bottom: 1px solid var(--border); }
+  .entry-chevron {
+    width: 16px; height: 16px; transition: transform 0.2s;
+    color: var(--muted); flex-shrink: 0;
+  }
+  .entry-chevron.open { transform: rotate(90deg); }
+  .entry-title { flex: 1; font-weight: 600; font-size: 14px; }
+  .entry-code { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+  .entry-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 6px; border-radius: 4px;
+    font-size: 10px; font-weight: 600;
+    background: rgba(255,255,255,0.05); color: var(--muted);
+  }
+  .entry-badge.has-data { background: rgba(232,160,18,0.15); color: var(--accent); }
+  .entry-body { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+
+  /* ── Fields ─────────────────────────────── */
+  .fields-row { display: flex; flex-wrap: wrap; gap: 10px; }
+  .field-group { display: flex; flex-direction: column; gap: 4px; }
+  .field-group label {
+    font-size: 11px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .field-group input, .field-group select {
+    padding: 7px 10px; font-size: 14px;
+    border: 1px solid var(--border); border-radius: 7px;
+    background: var(--surface); color: var(--text); outline: none;
+    transition: border-color 0.15s;
+  }
+  .field-group select { appearance: none; padding-right: 28px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%237a7f95' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; }
+  .field-group input:focus, .field-group select:focus { border-color: var(--accent); }
+
+  /* ── Jenis row ──────────────────────────── */
+  .jenis-row { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+  .jenis-row .field-group { flex: 1; min-width: 160px; }
+  .jenis-row .or-text { font-size: 11px; color: var(--muted); padding-bottom: 10px; }
+
+  /* ── Drop zones ─────────────────────────── */
+  .zones-row { display: flex; flex-wrap: wrap; gap: 16px; }
+  .drop-zone-wrap { flex: 1; min-width: 220px; }
+  .zone-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .zone-label.transfer { color: var(--blue); }
+  .zone-label.nota { color: var(--accent); }
+  .zone-label .count {
+    background: rgba(255,255,255,0.08); padding: 1px 6px;
+    border-radius: 10px; font-size: 10px;
+  }
+  .drop-zone {
+    border: 2px dashed var(--border); border-radius: var(--radius);
+    padding: 8px; text-align: center; cursor: pointer;
+    background: var(--surface); transition: all 0.2s;
+    min-height: 80px; position: relative;
+  }
+  .drop-zone.dragover { border-color: var(--accent); background: rgba(232,160,18,0.04); }
+  .drop-zone.empty { padding: 26px 8px; }
+  .drop-zone:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .zone-placeholder {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 6px; color: var(--muted); font-size: 12px;
+  }
+  .zone-placeholder svg { opacity: 0.3; }
+  .paste-hint {
+    font-size: 10px; color: var(--accent-dim);
+    margin-top: 4px; font-weight: 500;
+  }
+
+  /* ── Thumbnails ─────────────────────────── */
+  .thumbs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .thumb {
+    position: relative; width: 70px; height: 70px;
+    border-radius: 6px; overflow: hidden;
+    border: 1px solid var(--border); flex-shrink: 0;
+    cursor: grab; user-select: none;
+  }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .thumb .grip {
+    position: absolute; top: 2px; left: 2px;
+    color: #fff; opacity: 0.5; pointer-events: none;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+  }
+  .thumb .remove {
+    position: absolute; top: 2px; right: 2px;
+    width: 18px; height: 18px; border-radius: 3px;
+    background: rgba(0,0,0,0.65); color: #fff;
+    border: none; font-size: 10px; display: flex;
+    align-items: center; justify-content: center; cursor: pointer;
+  }
+  .thumb.dragover { border: 2px solid var(--accent); }
+  .thumb.uploading::after {
+    content: ""; position: absolute; inset: 0;
+    background: rgba(0,0,0,0.6) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10' stroke-opacity='0.3'/%3E%3Cpath d='M12 2a10 10 0 0 1 10 10'%3E%3CanimateTransform attributeName='transform' type='rotate' from='0 12 12' to='360 12 12' dur='1s' repeatCount='indefinite'/%3E%3C/path%3E%3C/svg%3E") center/24px no-repeat;
+  }
+
+  /* ── Action row ─────────────────────────── */
+  .entry-actions {
+    display: flex; gap: 8px; flex-wrap: wrap; padding-top: 4px;
+    border-top: 1px solid var(--border); margin-top: 4px;
+  }
+
+  /* ── Empty state ────────────────────────── */
+  .empty-state {
+    text-align: center; padding: 48px 20px;
+    color: var(--muted); font-size: 14px;
+  }
+  .empty-state .icon { font-size: 40px; margin-bottom: 10px; opacity: 0.3; }
+
+  /* ── Summary ────────────────────────────── */
+  .summary {
+    margin-top: 20px; padding: 14px 16px;
+    background: var(--card); border-radius: var(--radius);
+    border: 1px solid var(--border);
+    display: flex; flex-wrap: wrap; gap: 20px; font-size: 13px;
+    align-items: center;
+  }
+  .summary span { color: var(--muted); }
+  .summary strong { color: var(--accent); font-weight: 700; }
+  .summary .actions { margin-left: auto; display: flex; gap: 8px; }
+
+  /* ── Toast ──────────────────────────────── */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--green); color: #fff; padding: 10px 20px;
+    border-radius: 8px; font-size: 13px; font-weight: 600;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    opacity: 0; pointer-events: none; transition: opacity 0.3s, transform 0.3s;
+    z-index: 999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.error { background: var(--danger); }
+  .toast.info { background: var(--blue); }
+
+  /* ── Modal ─────────────────────────────── */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+    display: none; align-items: center; justify-content: center;
+    z-index: 1000; backdrop-filter: blur(4px);
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px; max-width: 420px; width: 90%;
+  }
+  .modal h3 { font-size: 16px; margin-bottom: 8px; }
+  .modal p { color: var(--muted); font-size: 13px; margin-bottom: 16px; line-height: 1.5; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+  @media (max-width: 600px) {
+    .header-controls .field { min-width: 100%; }
+    .export-btns { width: 100%; justify-content: stretch; }
+    .export-btns .btn { flex: 1; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-badge">AGE BALI</div>
+      <div>
+        <div class="brand-title">LPJ Report Builder</div>
+        <div class="brand-sub">Ayam Guling Enakko — Bukti Nota & Transfer</div>
+      </div>
+      <div class="brand-save-state" id="saveState" title="Status auto-save">
+        <span class="dot" id="saveDot"></span>
+        <span id="saveText">Tersimpan</span>
+      </div>
+    </div>
+    <div class="header-controls">
+      <div class="field">
+        <label>Judul Laporan</label>
+        <input id="reportTitle" value="BUKTI NOTA LPJ MONANG MANING" oninput="onTitleChange()">
+      </div>
+      <div class="export-btns">
+        <button class="btn btn-green" onclick="exportFile('xlsx')" id="btnXlsx" disabled>
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+          XLSX
+        </button>
+        <button class="btn btn-blue" onclick="exportFile('docx')" id="btnDocx" disabled>
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+          DOCX
+        </button>
+        <button class="btn btn-red" onclick="exportFile('pdf')" id="btnPdf" disabled>
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+          PDF
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+  <div class="entries" id="entriesList"></div>
+  <div class="empty-state" id="emptyState">
+    <div class="icon">📋</div>
+    <div>Belum ada entri. Klik tombol di bawah untuk mulai.</div>
+  </div>
+  <button class="btn btn-accent btn-full" style="margin-top:16px" onclick="addEntry()">
+    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+    Tambah Entri Pembelian
+  </button>
+  <div class="summary" id="summary" style="display:none">
+    <div><span>Total Entri:</span> <strong id="sumEntries">0</strong></div>
+    <div><span>Total Bukti Transfer:</span> <strong id="sumTransfer">0</strong></div>
+    <div><span>Total Bukti Nota:</span> <strong id="sumNota">0</strong></div>
+    <div><span>Ukuran Data:</span> <strong id="sumSize">0 KB</strong></div>
+    <div class="actions">
+      <button class="btn btn-ghost" onclick="exportJSON()" title="Backup data sebagai JSON">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+        Backup
+      </button>
+      <button class="btn btn-ghost" onclick="importJSON()" title="Restore dari file backup">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 12l4.5-4.5m0 0L16.5 12M12 7.5V21"/></svg>
+        Restore
+      </button>
+      <button class="btn btn-ghost" onclick="confirmReset()" style="color:var(--danger);border-color:rgba(239,68,68,0.3)" title="Hapus semua entri">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79"/></svg>
+        Reset
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-backdrop" id="confirmModal">
+  <div class="modal">
+    <h3 id="confirmTitle">Konfirmasi</h3>
+    <p id="confirmMsg">Yakin ingin melakukan tindakan ini?</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Batal</button>
+      <button class="btn btn-red" id="confirmOk">Hapus</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+<script>
+// ─── State ──────────────────────────────────────────────────────────────
+const STORAGE_KEY = "lpj-report-builder:v2";
+let entries = [];
+let openEntries = new Set();
+let saveTimer = null;
+let exporting = false;
+
+const JENIS_PRESETS = [
+  "ONLINE/SHOPEE",
+  "ONLINE/TOKOPEDIA",
+  "PEMBELIAN OFFLINE",
+  "MARKETING",
+  "TRANSPORTASI CREW",
+  "TAGIHAN LISTRIK",
+  "TAGIHAN AIR",
+  "PEMBELIAN BEEF BURGER",
+  "BAHAN BAKU",
+  "OPERASIONAL",
+  "GAJI KARYAWAN",
+  "SEWA",
+];
+
+// Image processing config
+const MAX_IMAGE_DIM = 1400;     // resize longest side to this on upload
+const JPEG_QUALITY = 0.82;       // upload quality
+const PDF_IMAGE_QUALITY = 0.85;  // pdf re-render quality
+const PDF_IMAGE_MAX_DIM = 900;   // pdf re-render dimension
+
+// ─── Utility ────────────────────────────────────────────────────────────
+const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+const genCode = () => {
+  const t = Date.now().toString(36).toUpperCase();
+  const r = Math.random().toString(36).slice(2,6).toUpperCase();
+  return `AGE-BALI-${t.slice(-4)}${r}`;
+};
+
+function showToast(msg, type = "success") {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.className = "toast show " + (type === "error" ? "error" : type === "info" ? "info" : "");
+  clearTimeout(el._tid);
+  el._tid = setTimeout(() => el.classList.remove("show"), 2400);
+}
+
+function escHtml(s) {
+  return (s == null ? "" : String(s))
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+}
+
+// ─── LocalStorage Auto-Save ────────────────────────────────────────────
+function setSaveState(state) {
+  const dot = document.getElementById("saveDot");
+  const text = document.getElementById("saveText");
+  if (state === "saving") {
+    dot.classList.add("saving");
+    text.textContent = "Menyimpan...";
+  } else if (state === "saved") {
+    dot.classList.remove("saving");
+    text.textContent = "Tersimpan";
+  } else if (state === "error") {
+    dot.classList.remove("saving");
+    text.textContent = "Gagal simpan";
+  }
+}
+
+function persist() {
+  setSaveState("saving");
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try {
+      const snapshot = {
+        version: 2,
+        title: document.getElementById("reportTitle").value,
+        entries,
+        openEntries: Array.from(openEntries),
+        savedAt: Date.now(),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+      setSaveState("saved");
+    } catch (err) {
+      console.error("Save failed:", err);
+      setSaveState("error");
+      if (err.name === "QuotaExceededError") {
+        showToast("Penyimpanan penuh — gunakan Backup untuk simpan ke file", "error");
+      }
+    }
+  }, 350);
+}
+
+function restore() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    if (data.entries && Array.isArray(data.entries)) {
+      entries = data.entries;
+      if (data.title) document.getElementById("reportTitle").value = data.title;
+      if (data.openEntries) openEntries = new Set(data.openEntries);
+      return true;
+    }
+  } catch (err) {
+    console.warn("Restore failed:", err);
+  }
+  return false;
+}
+
+function onTitleChange() { persist(); }
+
+// ─── Image resize (client-side compression) ────────────────────────────
+function resizeImage(dataUrl, maxDim = MAX_IMAGE_DIM, quality = JPEG_QUALITY) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      const longest = Math.max(width, height);
+      if (longest > maxDim) {
+        const scale = maxDim / longest;
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      // White background to handle PNG transparency
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = () => reject(new Error("Image load failed"));
+    img.src = dataUrl;
+  });
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = () => rej(new Error("File read failed"));
+    r.readAsDataURL(file);
+  });
+}
+
+// ─── Entry CRUD ─────────────────────────────────────────────────────────
+function addEntry(prefill) {
+  const e = {
+    id: uid(),
+    kode: genCode(),
+    jenis: prefill?.jenis || "",
+    tanggal: prefill?.tanggal || "",
+    transfer: prefill?.transfer ? JSON.parse(JSON.stringify(prefill.transfer)) : [],
+    nota: prefill?.nota ? JSON.parse(JSON.stringify(prefill.nota)) : [],
+  };
+  entries.push(e);
+  openEntries.add(e.id);
+  render();
+  persist();
+  showToast("Entri ditambahkan");
+
+  // Scroll to new entry
+  requestAnimationFrame(() => {
+    const el = document.querySelector(`[data-id="${e.id}"]`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+}
+
+function duplicateEntry(id) {
+  const src = entries.find(e => e.id === id);
+  if (!src) return;
+  addEntry({ jenis: src.jenis, tanggal: src.tanggal, transfer: [], nota: [] });
+}
+
+function deleteEntry(id) {
+  entries = entries.filter(e => e.id !== id);
+  openEntries.delete(id);
+  render();
+  persist();
+}
+
+function updateEntry(id, key, val) {
+  const e = entries.find(e => e.id === id);
+  if (e) e[key] = val;
+  updateEntryTitle(id);
+  persist();
+}
+
+function updateEntryTitle(id) {
+  const e = entries.find(x => x.id === id);
+  if (!e) return;
+  const idx = entries.indexOf(e);
+  const titleEl = document.querySelector(`[data-id="${id}"] .entry-title`);
+  if (titleEl) {
+    titleEl.textContent = `#${idx+1} — ${e.jenis || "Entri Baru"} ${e.tanggal ? `(${e.tanggal})` : ""}`;
+  }
+}
+
+// ─── Image handling ─────────────────────────────────────────────────────
+function addImages(entryId, field, imgs) {
+  const e = entries.find(e => e.id === entryId);
+  if (e) e[field].push(...imgs);
+  render();
+  persist();
+}
+
+function removeImage(entryId, field, imgId) {
+  const e = entries.find(e => e.id === entryId);
+  if (e) e[field] = e[field].filter(i => i.id !== imgId);
+  render();
+  persist();
+}
+
+function reorderImages(entryId, field, fromIdx, toIdx) {
+  const e = entries.find(e => e.id === entryId);
+  if (!e) return;
+  const arr = e[field];
+  const [item] = arr.splice(fromIdx, 1);
+  arr.splice(toIdx, 0, item);
+  render();
+  persist();
+}
+
+async function handleFiles(files, entryId, field) {
+  const valid = Array.from(files).filter(f => f.type.startsWith("image/"));
+  if (!valid.length) return;
+  showToast(`Memproses ${valid.length} gambar...`, "info");
+  const imgs = [];
+  for (const f of valid) {
+    try {
+      const raw = await readFileAsDataUrl(f);
+      const compressed = await resizeImage(raw);
+      imgs.push({ id: uid(), name: f.name, url: compressed });
+    } catch (err) {
+      console.error("Failed to process", f.name, err);
+    }
+  }
+  if (imgs.length) {
+    addImages(entryId, field, imgs);
+    showToast(`${imgs.length} gambar ditambahkan`);
+  }
+}
+
+async function handlePaste(e, entryId, field) {
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  const files = [];
+  for (const item of items) {
+    if (item.type.startsWith("image/")) {
+      e.preventDefault();
+      const f = item.getAsFile();
+      if (f) files.push(f);
+    }
+  }
+  if (files.length) await handleFiles(files, entryId, field);
+}
+
+// ─── Render ─────────────────────────────────────────────────────────────
+function render() {
+  const list = document.getElementById("entriesList");
+  const empty = document.getElementById("emptyState");
+  const summary = document.getElementById("summary");
+
+  empty.style.display = entries.length ? "none" : "block";
+  summary.style.display = entries.length ? "flex" : "none";
+
+  const hasEntries = entries.length > 0 && !exporting;
+  document.getElementById("btnXlsx").disabled = !hasEntries;
+  document.getElementById("btnDocx").disabled = !hasEntries;
+  document.getElementById("btnPdf").disabled = !hasEntries;
+
+  document.getElementById("sumEntries").textContent = entries.length;
+  document.getElementById("sumTransfer").textContent = entries.reduce((s,e) => s + e.transfer.length, 0);
+  document.getElementById("sumNota").textContent = entries.reduce((s,e) => s + e.nota.length, 0);
+
+  // Approximate data size
+  let bytes = 0;
+  for (const e of entries) {
+    for (const arr of [e.transfer, e.nota]) {
+      for (const img of arr) {
+        bytes += (img.url?.length || 0) * 0.75; // base64 → binary approx
+      }
+    }
+  }
+  document.getElementById("sumSize").textContent = formatBytes(bytes);
+
+  list.innerHTML = entries.map((e, idx) => {
+    const isOpen = openEntries.has(e.id);
+    const tCount = e.transfer.length, nCount = e.nota.length;
+    const hasData = tCount > 0 || nCount > 0;
+    return `
+    <div class="entry-card" data-id="${e.id}">
+      <div class="entry-header ${isOpen ? 'open' : ''}" onclick="toggleEntry('${e.id}')">
+        <svg class="entry-chevron ${isOpen ? 'open' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+        </svg>
+        <span class="entry-title">#${idx+1} — ${escHtml(e.jenis || "Entri Baru")} ${e.tanggal ? `(${escHtml(e.tanggal)})` : ""}</span>
+        <span class="entry-badge ${hasData ? 'has-data' : ''}" title="Bukti transfer + nota">📎 ${tCount + nCount}</span>
+        <span class="entry-code">${escHtml(e.kode)}</span>
+        <button class="btn-ghost" style="border:none;color:var(--danger);padding:4px" onclick="event.stopPropagation();deleteEntry('${e.id}')" title="Hapus">
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+        </button>
+      </div>
+      ${isOpen ? renderEntryBody(e, idx) : ""}
+    </div>`;
+  }).join("");
+
+  // Rebind paste listeners
+  document.querySelectorAll("[data-paste-zone]").forEach(zone => {
+    zone.setAttribute("tabindex", "0");
+    zone.onpaste = (ev) => {
+      const [eid, field] = zone.dataset.pasteZone.split("|");
+      handlePaste(ev, eid, field);
+    };
+  });
+}
+
+function renderEntryBody(e, idx) {
+  return `
+  <div class="entry-body">
+    <div class="fields-row">
+      <div class="jenis-row" style="flex:1">
+        <div class="field-group" style="flex:1;min-width:140px">
+          <label>Jenis Pembelian (ketik manual)</label>
+          <input value="${escHtml(e.jenis)}" placeholder="cth: ONLINE/SHOPEE"
+            oninput="updateEntry('${e.id}','jenis',this.value)">
+        </div>
+        <div class="or-text">atau</div>
+        <div class="field-group" style="min-width:160px">
+          <label>Pilih Cepat</label>
+          <select onchange="if(this.value){updateEntry('${e.id}','jenis',this.value);this.value=''}">
+            <option value="">— Pilih —</option>
+            ${JENIS_PRESETS.map(j => `<option value="${escHtml(j)}">${escHtml(j)}</option>`).join("")}
+          </select>
+        </div>
+      </div>
+      <div class="field-group" style="min-width:140px">
+        <label>Tanggal (ketik/paste)</label>
+        <input value="${escHtml(e.tanggal)}" placeholder="cth: 02/01/2026"
+          oninput="updateEntry('${e.id}','tanggal',this.value)">
+      </div>
+    </div>
+
+    <div class="zones-row">
+      ${renderDropZone(e, "transfer", "Bukti Transfer")}
+      ${renderDropZone(e, "nota", "Bukti Nota")}
+    </div>
+
+    <div class="entry-actions">
+      <button class="btn btn-ghost" onclick="duplicateEntry('${e.id}')">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75"/></svg>
+        Duplikat Entri (Hari Sama)
+      </button>
+    </div>
+  </div>`;
+}
+
+function renderDropZone(entry, field, label) {
+  const imgs = entry[field];
+  const accent = field === "transfer" ? "blue" : "nota";
+  const isEmpty = !imgs.length;
+  return `
+  <div class="drop-zone-wrap">
+    <div class="zone-label ${accent}">${label} <span class="count">${imgs.length}</span></div>
+    <div class="drop-zone ${isEmpty ? 'empty' : ''}"
+      data-paste-zone="${entry.id}|${field}"
+      ondragover="event.preventDefault();this.classList.add('dragover')"
+      ondragleave="this.classList.remove('dragover')"
+      ondrop="handleZoneDrop(event,'${entry.id}','${field}')"
+      onclick="triggerFileInput('${entry.id}','${field}')">
+      ${isEmpty ? `
+        <div class="zone-placeholder">
+          <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z"/>
+          </svg>
+          <span>Drop gambar atau klik upload</span>
+          <div class="paste-hint">💡 Klik zona ini lalu Ctrl+V untuk paste dari clipboard</div>
+        </div>
+      ` : `
+        <div class="thumbs">
+          ${imgs.map((img, i) => `
+            <div class="thumb" draggable="true"
+              ondragstart="event.dataTransfer.setData('text/plain','${i}');event.dataTransfer.setData('field','${field}');event.stopPropagation()"
+              ondragover="event.preventDefault();this.classList.add('dragover')"
+              ondragleave="this.classList.remove('dragover')"
+              ondrop="handleThumbDrop(event,'${entry.id}','${field}',${i})">
+              <img src="${img.url}" alt="${escHtml(img.name)}" loading="lazy">
+              <div class="grip"><svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg></div>
+              <button class="remove" onclick="event.stopPropagation();removeImage('${entry.id}','${field}','${img.id}')" title="Hapus gambar">✕</button>
+            </div>
+          `).join("")}
+        </div>
+      `}
+    </div>
+  </div>`;
+}
+
+// ─── Event handlers ─────────────────────────────────────────────────────
+function toggleEntry(id) {
+  if (openEntries.has(id)) openEntries.delete(id);
+  else openEntries.add(id);
+  render();
+  persist();
+}
+
+function triggerFileInput(entryId, field) {
+  const inp = document.createElement("input");
+  inp.type = "file"; inp.accept = "image/*"; inp.multiple = true;
+  inp.onchange = () => handleFiles(inp.files, entryId, field);
+  inp.click();
+}
+
+function handleZoneDrop(e, entryId, field) {
+  e.preventDefault();
+  e.currentTarget.classList.remove("dragover");
+  if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files, entryId, field);
+}
+
+function handleThumbDrop(e, entryId, field, toIdx) {
+  e.preventDefault();
+  e.stopPropagation();
+  e.currentTarget.classList.remove("dragover");
+  const fromIdx = parseInt(e.dataTransfer.getData("text/plain"), 10);
+  const srcField = e.dataTransfer.getData("field");
+  if (srcField === field && !isNaN(fromIdx) && fromIdx !== toIdx) {
+    reorderImages(entryId, field, fromIdx, toIdx);
+  }
+}
+
+document.addEventListener("paste", async (e) => {
+  const zone = document.activeElement?.closest("[data-paste-zone]");
+  if (!zone) return;
+  const [eid, field] = zone.dataset.pasteZone.split("|");
+  await handlePaste(e, eid, field);
+});
+
+// ─── Confirm Modal ─────────────────────────────────────────────────────
+function showConfirm({ title, message, okLabel, onOk }) {
+  document.getElementById("confirmTitle").textContent = title || "Konfirmasi";
+  document.getElementById("confirmMsg").textContent = message;
+  const okBtn = document.getElementById("confirmOk");
+  okBtn.textContent = okLabel || "Konfirmasi";
+  okBtn.onclick = () => { onOk(); closeConfirm(); };
+  document.getElementById("confirmModal").classList.add("show");
+}
+function closeConfirm() {
+  document.getElementById("confirmModal").classList.remove("show");
+}
+
+function confirmReset() {
+  showConfirm({
+    title: "Hapus Semua Entri?",
+    message: `${entries.length} entri akan dihapus permanen. Tindakan ini tidak bisa dibatalkan. Gunakan Backup dulu jika perlu menyimpan data.`,
+    okLabel: "Ya, Hapus Semua",
+    onOk: () => {
+      entries = [];
+      openEntries = new Set();
+      render();
+      persist();
+      showToast("Semua entri dihapus");
+    },
+  });
+}
+
+// ─── Backup / Restore JSON ─────────────────────────────────────────────
+function exportJSON() {
+  const data = {
+    version: 2,
+    title: document.getElementById("reportTitle").value,
+    entries,
+    exportedAt: new Date().toISOString(),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `LPJ_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast("Backup JSON berhasil diunduh");
+}
+
+function importJSON() {
+  const inp = document.createElement("input");
+  inp.type = "file"; inp.accept = "application/json";
+  inp.onchange = async () => {
+    const f = inp.files[0];
+    if (!f) return;
+    try {
+      const txt = await f.text();
+      const data = JSON.parse(txt);
+      if (!Array.isArray(data.entries)) throw new Error("Format invalid");
+      showConfirm({
+        title: "Restore Backup?",
+        message: `Ditemukan ${data.entries.length} entri. Data saat ini (${entries.length} entri) akan diganti.`,
+        okLabel: "Ya, Restore",
+        onOk: () => {
+          entries = data.entries;
+          if (data.title) document.getElementById("reportTitle").value = data.title;
+          openEntries = new Set();
+          render();
+          persist();
+          showToast(`${data.entries.length} entri di-restore`);
+        },
+      });
+    } catch (err) {
+      showToast("File backup tidak valid: " + err.message, "error");
+    }
+  };
+  inp.click();
+}
+
+// ─── Export DOCX/XLSX via serverless ───────────────────────────────────
+async function exportFile(type) {
+  if (exporting) return;
+  const title = document.getElementById("reportTitle").value || "LPJ_Report";
+
+  if (type === "pdf") return exportPDF(title);
+
+  exporting = true;
+  const btn = document.getElementById(`btn${type === "docx" ? "Docx" : "Xlsx"}`);
+  const originalHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> Mengekspor...`;
+
+  try {
+    showToast(`Mengekspor ${type.toUpperCase()}...`, "info");
+
+    // Send compressed entries (image URLs are already resized at upload time)
+    const payload = JSON.stringify({ entries, title, subtitle: "Ayam Guling Enakko" });
+
+    const res = await fetch(`/api/export/${type}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: payload,
+    });
+
+    if (!res.ok) {
+      let msg = `HTTP ${res.status}`;
+      try { msg = (await res.json()).error || msg; } catch {}
+      throw new Error(msg);
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const stamp = new Date().toISOString().slice(0,10);
+    a.download = `${title.replace(/\s+/g,"_")}_${stamp}.${type}`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`${type.toUpperCase()} berhasil diunduh!`);
+  } catch (err) {
+    console.error(err);
+    showToast(`Gagal export: ${err.message}`, "error");
+  } finally {
+    exporting = false;
+    btn.disabled = false;
+    btn.innerHTML = originalHTML;
+    render();
+  }
+}
+
+// ─── Export PDF (client-side, enhanced) ─────────────────────────────────
+async function recompressForPDF(dataUrl) {
+  return resizeImage(dataUrl, PDF_IMAGE_MAX_DIM, PDF_IMAGE_QUALITY);
+}
+
+async function exportPDF(title) {
+  if (exporting) return;
+  exporting = true;
+  const btn = document.getElementById("btnPdf");
+  const originalHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> Membuat PDF...`;
+
+  try {
+    showToast("Membuat PDF...", "info");
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+
+    // Page dimensions
+    const W = 210, H = 297;
+    const M_L = 15, M_R = 15, M_T = 22, M_B = 18;
+    const CW = W - M_L - M_R; // content width
+    const subtitle = "Ayam Guling Enakko";
+
+    // Colors
+    const C_BRAND = [212, 160, 23];
+    const C_BRAND_DARK = [138, 104, 16];
+    const C_TEXT = [31, 41, 55];
+    const C_MUTED = [107, 114, 128];
+    const C_BLUE = [59, 130, 246];
+    const C_ZEBRA = [250, 247, 240];
+
+    let pageNum = 0;
+    const dateStr = new Date().toLocaleDateString("id-ID", {
+      weekday: "long", year: "numeric", month: "long", day: "numeric",
+    });
+
+    function drawHeader() {
+      pageNum++;
+      // Brand bar
+      doc.setFillColor(...C_BRAND);
+      doc.rect(0, 0, W, 12, "F");
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text("AYAM GULING ENAKKO", M_L, 8);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text("AGE BALI — LPJ Report", W - M_R, 8, { align: "right" });
+      // Underline accent
+      doc.setDrawColor(...C_BRAND_DARK);
+      doc.setLineWidth(0.3);
+      doc.line(0, 12, W, 12);
+    }
+
+    function drawFooter(totalPages) {
+      doc.setDrawColor(...C_MUTED);
+      doc.setLineWidth(0.1);
+      doc.line(M_L, H - M_B + 4, W - M_R, H - M_B + 4);
+      doc.setTextColor(...C_MUTED);
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(8);
+      doc.text(`Dicetak: ${dateStr}`, M_L, H - M_B + 10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Halaman ${pageNum}${totalPages ? ` dari ${totalPages}` : ""}`, W - M_R, H - M_B + 10, { align: "right" });
+    }
+
+    function newPage() {
+      doc.addPage();
+      drawHeader();
+    }
+
+    let y = M_T;
+    drawHeader();
+
+    function ensureSpace(needed) {
+      if (y + needed > H - M_B) {
+        drawFooter();
+        newPage();
+        y = M_T;
+      }
+    }
+
+    // Title section
+    doc.setTextColor(...C_TEXT);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text(title, W / 2, y + 4, { align: "center" });
+    y += 8;
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(11);
+    doc.setTextColor(...C_BRAND_DARK);
+    doc.text(subtitle, W / 2, y + 3, { align: "center" });
+    y += 6;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...C_MUTED);
+    doc.text(`Dicetak: ${dateStr}`, W / 2, y + 3, { align: "center" });
+    y += 10;
+
+    // Summary card
+    const totalT = entries.reduce((s, e) => s + e.transfer.length, 0);
+    const totalN = entries.reduce((s, e) => s + e.nota.length, 0);
+    doc.setFillColor(250, 247, 240);
+    doc.setDrawColor(...C_BRAND);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(M_L, y, CW, 14, 2, 2, "FD");
+    doc.setTextColor(...C_TEXT);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    const stats = [
+      { label: "Entri", val: String(entries.length) },
+      { label: "Bukti Transfer", val: String(totalT) },
+      { label: "Bukti Nota", val: String(totalN) },
+    ];
+    const segW = CW / stats.length;
+    stats.forEach((s, i) => {
+      const cx = M_L + i * segW + segW / 2;
+      doc.setTextColor(...C_MUTED);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.text(s.label.toUpperCase(), cx, y + 5, { align: "center" });
+      doc.setTextColor(...C_TEXT);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text(s.val, cx, y + 11, { align: "center" });
+    });
+    y += 20;
+
+    // Pre-compress images for PDF (use smaller versions)
+    const compressedCache = new Map();
+    async function getCompressed(img) {
+      if (compressedCache.has(img.id)) return compressedCache.get(img.id);
+      const small = await recompressForPDF(img.url);
+      compressedCache.set(img.id, small);
+      return small;
+    }
+
+    // Entries — each as a card with multi-column image grid
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
+
+      ensureSpace(24);
+
+      // Entry header bar
+      doc.setFillColor(...C_BRAND);
+      doc.rect(M_L, y, CW, 9, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text(`${i + 1}. ${(entry.jenis || "—").toUpperCase()}`, M_L + 3, y + 6);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      const rightInfo = `${entry.tanggal || "—"}  •  ${entry.kode || ""}`;
+      doc.text(rightInfo, W - M_R - 3, y + 6, { align: "right" });
+      doc.setTextColor(...C_TEXT);
+      y += 11;
+
+      // Section: transfer images
+      await drawImageGrid(entry.transfer, "BUKTI TRANSFER", C_BLUE);
+      // Section: nota images
+      await drawImageGrid(entry.nota, "BUKTI NOTA", C_BRAND);
+
+      y += 4;
+      // Separator
+      doc.setDrawColor(229, 231, 235);
+      doc.setLineWidth(0.2);
+      doc.line(M_L, y, W - M_R, y);
+      y += 4;
+    }
+
+    async function drawImageGrid(images, label, labelColor) {
+      // Label
+      ensureSpace(7);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(...labelColor);
+      doc.text(label, M_L, y + 3);
+      // accent bar under label
+      doc.setFillColor(...labelColor);
+      doc.rect(M_L, y + 4.5, 18, 0.6, "F");
+      doc.setTextColor(...C_TEXT);
+      y += 7;
+
+      if (!images || !images.length) {
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(8);
+        doc.setTextColor(...C_MUTED);
+        doc.text("— tidak ada bukti —", M_L + 3, y + 3);
+        doc.setTextColor(...C_TEXT);
+        y += 6;
+        return;
+      }
+
+      // Grid: 3 columns
+      const COLS = 3;
+      const GAP = 3;
+      const CELL_W = (CW - GAP * (COLS - 1)) / COLS; // ~58mm
+      const CELL_H = CELL_W * 1.3; // 3:4 ratio
+
+      for (let i = 0; i < images.length; i++) {
+        const col = i % COLS;
+        if (col === 0) {
+          ensureSpace(CELL_H + 4);
+        }
+        const x = M_L + col * (CELL_W + GAP);
+        try {
+          const compressed = await getCompressed(images[i]);
+          // Light gray background for image cell
+          doc.setFillColor(243, 244, 246);
+          doc.setDrawColor(209, 213, 219);
+          doc.setLineWidth(0.2);
+          doc.roundedRect(x, y, CELL_W, CELL_H, 1, 1, "FD");
+          doc.addImage(compressed, "JPEG", x + 1, y + 1, CELL_W - 2, CELL_H - 2, undefined, "FAST");
+        } catch (err) {
+          console.warn("Image embed failed:", err);
+        }
+        if (col === COLS - 1 || i === images.length - 1) {
+          y += CELL_H + 3;
+        }
+      }
+    }
+
+    // Final footer with total page count
+    const totalPages = doc.internal.pages.length - 1; // jsPDF pages start at 1
+    // Re-stamp footers with total count
+    for (let p = 1; p <= totalPages; p++) {
+      doc.setPage(p);
+      pageNum = p; // override
+      // Clear footer area (white rect)
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, H - M_B - 1, W, M_B + 1, "F");
+      drawFooter(totalPages);
+    }
+
+    const stamp = new Date().toISOString().slice(0, 10);
+    doc.save(`${title.replace(/\s+/g, "_")}_${stamp}.pdf`);
+    showToast("PDF berhasil diunduh!");
+  } catch (err) {
+    console.error(err);
+    showToast(`Gagal export PDF: ${err.message}`, "error");
+  } finally {
+    exporting = false;
+    btn.disabled = false;
+    btn.innerHTML = originalHTML;
+    render();
+  }
+}
+
+// ─── Init ───────────────────────────────────────────────────────────────
+(function init() {
+  const restored = restore();
+  if (restored && entries.length) {
+    showToast(`Memuat ${entries.length} entri dari tersimpan otomatis`, "info");
+  }
+  render();
+  setSaveState("saved");
+
+  // Warn before leaving if there are unsaved changes during export
+  window.addEventListener("beforeunload", (e) => {
+    if (exporting) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+  });
+})();
+</script>
+</body>
+</html>

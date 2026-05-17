@@ -1,0 +1,19 @@
+{
+  "name": "lpj-report-builder",
+  "version": "2.0.0",
+  "description": "AGE BALI - LPJ Report Builder (Serverless on Vercel) - Ayam Guling Enakko",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod",
+    "build": "echo 'Static site - no build step needed'"
+  },
+  "dependencies": {
+    "docx": "^9.6.1",
+    "exceljs": "^4.4.0"
+  },
+  "engines": {
+    "node": "20.x"
+  },
+  "license": "MIT"
+}
