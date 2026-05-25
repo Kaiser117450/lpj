@@ -756,6 +756,9 @@
 <script>
 // ─── State ──────────────────────────────────────────────────────────────
 const STORAGE_KEY = "lpj-report-builder:v2";
+const IDB_NAME = "lpj-report-builder-db";
+const IDB_STORE = "state";
+const IDB_KEY = "main";
 let entries = [];
 let openEntries = new Set();
 let saveTimer = null;
@@ -780,6 +783,9 @@ const MAX_IMAGE_DIM = 1400;
 const JPEG_QUALITY = 0.82;
 const PDF_IMAGE_QUALITY = 0.85;
 const PDF_IMAGE_MAX_DIM = 900;
+
+// Vercel Hobby body limit = 4.5MB. Keep payload under 4MB to leave headroom.
+const EXPORT_PAYLOAD_HARD_LIMIT = 4 * 1024 * 1024;
 
 // ─── Utility ────────────────────────────────────────────────────────────
 const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
@@ -809,7 +815,47 @@ function formatBytes(bytes) {
   return (bytes / (1024 * 1024)).toFixed(2) + " MB";
 }
 
-// ─── LocalStorage Auto-Save ────────────────────────────────────────────
+// ─── IndexedDB Storage (replaces LocalStorage to avoid ~5MB quota) ────
+let _dbPromise = null;
+function openIDB() {
+  if (_dbPromise) return _dbPromise;
+  _dbPromise = new Promise((resolve, reject) => {
+    if (!window.indexedDB) return reject(new Error("IndexedDB unavailable"));
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(IDB_STORE)) {
+        db.createObjectStore(IDB_STORE);
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error || new Error("IDB open failed"));
+  });
+  return _dbPromise;
+}
+
+async function idbGet(key) {
+  const db = await openIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, "readonly");
+    const req = tx.objectStore(IDB_STORE).get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbSet(key, value) {
+  const db = await openIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, "readwrite");
+    tx.objectStore(IDB_STORE).put(value, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error || new Error("IDB tx aborted"));
+  });
+}
+
+// ─── Auto-Save (IndexedDB) ─────────────────────────────────────────────
 function setSaveState(state) {
   const dot = document.getElementById("saveDot");
   const text = document.getElementById("saveText");
@@ -828,28 +874,51 @@ function setSaveState(state) {
 function persist() {
   setSaveState("saving");
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
+  saveTimer = setTimeout(async () => {
+    const snapshot = {
+      version: 3,
+      title: document.getElementById("reportTitle").value,
+      entries,
+      openEntries: Array.from(openEntries),
+      savedAt: Date.now(),
+    };
     try {
-      const snapshot = {
-        version: 2,
-        title: document.getElementById("reportTitle").value,
-        entries,
-        openEntries: Array.from(openEntries),
-        savedAt: Date.now(),
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+      await idbSet(IDB_KEY, snapshot);
       setSaveState("saved");
     } catch (err) {
-      console.error("Save failed:", err);
-      setSaveState("error");
-      if (err.name === "QuotaExceededError") {
-        showToast("Penyimpanan penuh — gunakan Backup untuk simpan ke file", "error");
+      console.error("IDB save failed:", err);
+      // Try LocalStorage fallback (older browsers / private mode)
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+        setSaveState("saved");
+      } catch (err2) {
+        console.error("LocalStorage fallback failed:", err2);
+        setSaveState("error");
+        if (err2.name === "QuotaExceededError" || err.name === "QuotaExceededError") {
+          showToast("Penyimpanan browser penuh — gunakan Backup untuk simpan ke file", "error");
+        } else {
+          showToast("Gagal menyimpan: " + (err2.message || err.message || "unknown"), "error");
+        }
       }
     }
   }, 350);
 }
 
-function restore() {
+async function restore() {
+  // 1) Try IndexedDB first
+  try {
+    const data = await idbGet(IDB_KEY);
+    if (data && Array.isArray(data.entries)) {
+      entries = data.entries;
+      if (data.title) document.getElementById("reportTitle").value = data.title;
+      if (data.openEntries) openEntries = new Set(data.openEntries);
+      return true;
+    }
+  } catch (err) {
+    console.warn("IDB restore failed:", err);
+  }
+
+  // 2) Migrate from LocalStorage (one-time)
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return false;
@@ -858,10 +927,23 @@ function restore() {
       entries = data.entries;
       if (data.title) document.getElementById("reportTitle").value = data.title;
       if (data.openEntries) openEntries = new Set(data.openEntries);
+      // Persist into IDB and clear LocalStorage to free quota
+      try {
+        await idbSet(IDB_KEY, {
+          version: 3,
+          title: data.title || "",
+          entries,
+          openEntries: Array.from(openEntries),
+          savedAt: Date.now(),
+        });
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (e) {
+        console.warn("Migration to IDB failed:", e);
+      }
       return true;
     }
   } catch (err) {
-    console.warn("Restore failed:", err);
+    console.warn("LocalStorage restore failed:", err);
   }
   return false;
 }
@@ -982,9 +1064,13 @@ function reorderImages(entryId, field, fromIdx, toIdx) {
 
 async function handleFiles(files, entryId, field) {
   const valid = Array.from(files).filter(f => f.type.startsWith("image/"));
-  if (!valid.length) return;
+  if (!valid.length) {
+    showToast("Tidak ada file gambar yang valid", "error");
+    return;
+  }
   showToast(`Memproses ${valid.length} gambar…`, "info");
   const imgs = [];
+  let failed = 0;
   for (const f of valid) {
     try {
       const raw = await readFileAsDataUrl(f);
@@ -992,12 +1078,68 @@ async function handleFiles(files, entryId, field) {
       imgs.push({ id: uid(), name: f.name, url: compressed });
     } catch (err) {
       console.error("Failed to process", f.name, err);
+      failed++;
     }
   }
   if (imgs.length) {
     addImages(entryId, field, imgs);
-    showToast(`${imgs.length} gambar ditambahkan`);
+    const msg = failed
+      ? `${imgs.length} gambar ditambahkan (${failed} gagal)`
+      : `${imgs.length} gambar ditambahkan`;
+    showToast(msg, failed ? "info" : "success");
+  } else if (failed) {
+    showToast(`Gagal memproses ${failed} gambar`, "error");
   }
+}
+
+// Recursively read a FileSystemEntry (file or directory) into a flat files array
+async function readEntryRecursive(entry, out, depth = 0) {
+  if (depth > 8) return; // safety cap
+  if (entry.isFile) {
+    await new Promise((resolve) => {
+      entry.file(
+        (f) => {
+          if (f.type.startsWith("image/")) out.push(f);
+          resolve();
+        },
+        () => resolve()
+      );
+    });
+    return;
+  }
+  if (entry.isDirectory) {
+    const reader = entry.createReader();
+    const readBatch = () => new Promise((resolve) => {
+      reader.readEntries(async (children) => {
+        if (!children.length) return resolve();
+        for (const child of children) {
+          await readEntryRecursive(child, out, depth + 1);
+        }
+        // Browsers cap readEntries() at ~100 — keep reading until empty
+        await readBatch();
+        resolve();
+      }, () => resolve());
+    });
+    await readBatch();
+  }
+}
+
+async function extractFilesFromDataTransfer(dt) {
+  // Prefer items API so we can recurse into folders
+  if (dt.items && dt.items.length) {
+    const entries = [];
+    for (const item of dt.items) {
+      const entry = item.webkitGetAsEntry?.();
+      if (entry) entries.push(entry);
+    }
+    if (entries.length) {
+      const out = [];
+      for (const ent of entries) await readEntryRecursive(ent, out);
+      if (out.length) return out;
+    }
+  }
+  // Fallback: flat file list
+  return Array.from(dt.files || []).filter(f => f.type.startsWith("image/"));
 }
 
 async function handlePaste(e, entryId, field) {
@@ -1165,14 +1307,23 @@ function toggleEntry(id) {
 function triggerFileInput(entryId, field) {
   const inp = document.createElement("input");
   inp.type = "file"; inp.accept = "image/*"; inp.multiple = true;
+  // Allow folder selection where supported (Chrome/Edge). Users can still pick individual files.
+  try { inp.webkitdirectory = false; } catch {}
   inp.onchange = () => handleFiles(inp.files, entryId, field);
   inp.click();
 }
 
-function handleZoneDrop(e, entryId, field) {
+async function handleZoneDrop(e, entryId, field) {
   e.preventDefault();
   e.currentTarget.classList.remove("dragover");
-  if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files, entryId, field);
+  try {
+    const files = await extractFilesFromDataTransfer(e.dataTransfer);
+    if (files.length) await handleFiles(files, entryId, field);
+    else showToast("Tidak ada gambar di drop tersebut", "error");
+  } catch (err) {
+    console.error("Drop handling failed:", err);
+    showToast("Gagal memproses drop: " + (err.message || err), "error");
+  }
 }
 
 function handleThumbDrop(e, entryId, field, toIdx) {
@@ -1272,6 +1423,52 @@ function importJSON() {
 }
 
 // ─── Export DOCX/XLSX ──────────────────────────────────────────────────
+// XLSX doesn't embed images, so we strip the heavy `url` field — payload becomes tiny.
+function stripImagesForXlsx(srcEntries) {
+  return srcEntries.map(e => ({
+    ...e,
+    transfer: e.transfer.map(img => ({ id: img.id, name: img.name })),
+    nota: e.nota.map(img => ({ id: img.id, name: img.name })),
+  }));
+}
+
+// Pick compression target based on total image count so big reports still fit.
+function pickExportProfile(totalImages) {
+  if (totalImages <= 20) return { dim: 1100, q: 0.80 };
+  if (totalImages <= 40) return { dim: 950,  q: 0.76 };
+  if (totalImages <= 80) return { dim: 800,  q: 0.70 };
+  if (totalImages <= 140) return { dim: 700, q: 0.64 };
+  return { dim: 600, q: 0.58 };
+}
+
+async function recompressEntriesForDocx(srcEntries, profile, onProgress) {
+  const out = [];
+  let done = 0;
+  const totalImgs = srcEntries.reduce((s, e) => s + e.transfer.length + e.nota.length, 0);
+  const reshrink = async (imgs) => {
+    const list = [];
+    for (const img of imgs) {
+      try {
+        const small = await resizeImage(img.url, profile.dim, profile.q);
+        list.push({ id: img.id, name: img.name, url: small });
+      } catch (err) {
+        console.warn("Recompress failed:", img.name, err);
+      }
+      done++;
+      onProgress && onProgress(done, totalImgs);
+    }
+    return list;
+  };
+  for (const e of srcEntries) {
+    out.push({
+      ...e,
+      transfer: await reshrink(e.transfer),
+      nota: await reshrink(e.nota),
+    });
+  }
+  return out;
+}
+
 async function exportFile(type) {
   if (exporting) return;
   const title = document.getElementById("reportTitle").value || "LPJ_Report";
@@ -1285,8 +1482,31 @@ async function exportFile(type) {
   btn.innerHTML = `<span class="spinner"></span> Mengekspor…`;
 
   try {
-    showToast(`Mengekspor ${type.toUpperCase()}…`, "info");
-    const payload = JSON.stringify({ entries, title, subtitle: "Ayam Guling Enakko" });
+    let exportEntries;
+    if (type === "xlsx") {
+      // XLSX export only needs counts/metadata — drop image data entirely.
+      exportEntries = stripImagesForXlsx(entries);
+      showToast("Mengekspor XLSX…", "info");
+    } else {
+      // DOCX: recompress images so payload fits Vercel Hobby 4.5MB limit.
+      const totalImgs = entries.reduce((s, e) => s + e.transfer.length + e.nota.length, 0);
+      const profile = pickExportProfile(totalImgs);
+      showToast(`Mengompresi ${totalImgs} gambar untuk DOCX…`, "info");
+      exportEntries = await recompressEntriesForDocx(entries, profile, (done, total) => {
+        btn.innerHTML = `<span class="spinner"></span> Kompres ${done}/${total}…`;
+      });
+    }
+
+    const payload = JSON.stringify({ entries: exportEntries, title, subtitle: "Ayam Guling Enakko" });
+    const payloadSize = new Blob([payload]).size;
+    if (payloadSize > EXPORT_PAYLOAD_HARD_LIMIT) {
+      throw new Error(
+        `Data terlalu besar untuk diunggah ke server (${formatBytes(payloadSize)} dari batas ${formatBytes(EXPORT_PAYLOAD_HARD_LIMIT)}). ` +
+        `Gunakan Export PDF (tanpa batas, dibuat di browser) atau pisah laporan ke beberapa file.`
+      );
+    }
+
+    btn.innerHTML = `<span class="spinner"></span> Mengirim ${formatBytes(payloadSize)}…`;
 
     const res = await fetch(`/api/export/${type}`, {
       method: "POST",
@@ -1296,7 +1516,11 @@ async function exportFile(type) {
 
     if (!res.ok) {
       let msg = `HTTP ${res.status}`;
-      try { msg = (await res.json()).error || msg; } catch {}
+      if (res.status === 413) {
+        msg = `File terlalu besar (HTTP 413). Coba kurangi gambar, atau gunakan Export PDF.`;
+      } else {
+        try { msg = (await res.json()).error || msg; } catch {}
+      }
       throw new Error(msg);
     }
 
@@ -1545,13 +1769,19 @@ async function exportPDF(title) {
 }
 
 // ─── Init ───────────────────────────────────────────────────────────────
-(function init() {
-  const restored = restore();
-  if (restored && entries.length) {
-    showToast(`Memuat ${entries.length} entri tersimpan`, "info");
-  }
+(async function init() {
   render();
   setSaveState("saved");
+
+  try {
+    const restored = await restore();
+    if (restored && entries.length) {
+      render();
+      showToast(`Memuat ${entries.length} entri tersimpan`, "info");
+    }
+  } catch (err) {
+    console.warn("Init restore failed:", err);
+  }
 
   window.addEventListener("beforeunload", (e) => {
     if (exporting) {
